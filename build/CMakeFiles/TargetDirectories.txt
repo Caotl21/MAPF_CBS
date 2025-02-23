@@ -1,0 +1,3 @@
+/mnt/wsl_workspace/CBS/build/CMakeFiles/CBS.dir
+/mnt/wsl_workspace/CBS/build/CMakeFiles/edit_cache.dir
+/mnt/wsl_workspace/CBS/build/CMakeFiles/rebuild_cache.dir

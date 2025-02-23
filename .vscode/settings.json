@@ -1,0 +1,6 @@
+{
+    "cmake.sourceDirectory": "/mnt/wsl_workspace/CBS",
+    "files.associations": {
+        "chrono": "cpp"
+    }
+}
