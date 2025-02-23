@@ -81,8 +81,9 @@ struct stage{
     std::vector<int > tvalid_agent;
     int g,h;
     int open = 0;
-    void geth(std::vector<int > ed);
-    void ptf();
+    void geth(std::vector<int > ed, double w = 1.0);
+    //void ptf();
+    int direction;
 };
 
 struct Hashfunc {
@@ -113,7 +114,7 @@ bool ifvalid(const std::vector<int>& stnow, int dx, int dy,
 
 void explore(std::vector<int> stnow, int dx, int dy,
     std::priority_queue<std::vector<int>, std::vector<std::vector<int>>, stacmp>& open_list,
-    std::vector<int>& edstage, std::vector<int> ed0,
+    std::vector<int>& edstage, std::vector<int> ed0, std::vector<int> st0, 
     std::unordered_map<std::pair<int, int>, std::map<int, double>, pair_hash>& dominance_map,
     int& pruned_nodes, int& total_nodes);
 

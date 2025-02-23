@@ -26,16 +26,26 @@ agent* as;
 //}
 
 // 计算启发式代价 h（切比雪夫距离）
-void stage::geth(vector<int> ed) {
+void stage::geth(vector<int> ed, double w) {
     int dx = abs(post[0] - ed[0]);
     int dy = abs(post[1] - ed[1]);
-    h = max(dx, dy); // 切比雪夫距离
+    h = w * max(dx, dy); // 切比雪夫距离
 }
+
+// 动态权重计算函数
+double dynamic_weight(const vector<int>& current, const vector<int>& start, 
+    const vector<int>& goal) {
+     // 进度因子：已走路径占总预估路径的比例
+     double progress = current[2] / (abs(start[0]-goal[0]) + abs(start[1]-goal[1]) + 1e-6);
+    // 动态权重曲线：初始阶段权重高，后期逐渐降低
+    return 1.5 - 0.5 * (1.0 / (1.0 + exp(-10*(progress-0.7))));
+}
+
 // 打印节点状态
-void stage::ptf()
-{
-    printf("post is %d %d %d, g is %d, h is %d\n",post[0],post[1],post[2],g,h);
-}
+// void stage::ptf()
+// {
+//     printf("post is %d %d %d, g is %d, h is %d\n",post[0],post[1],post[2],g,h);
+// }
 
 // 自定义哈希函数，用于将 vector<int> 作为键存入 unordered_map
 size_t Hashfunc::operator() (const vector<int>& key) const{
@@ -135,7 +145,7 @@ bool ifvalid(const std::vector<int>& stnow, int dx, int dy,
 
 // 节点拓展
 //void explore(vector<int > stnow,int dx,int dy,priority_queue<vector<int >,vector<vector<int>>, stacmp > &open_list,vector<int >& edstage,vector<int > ed0)
-void explore(std::vector<int> stnow, int dx, int dy,std::priority_queue<vector<int>, std::vector<vector<int>>, stacmp>& open_list,std::vector<int>& edstage, std::vector<int> ed0,std::unordered_map<std::pair<int, int>, std::map<int, double>, pair_hash>& dominance_map,int& pruned_nodes, int& total_nodes)
+void explore(std::vector<int> stnow, int dx, int dy,std::priority_queue<vector<int>, std::vector<vector<int>>, stacmp>& open_list,std::vector<int>& edstage, std::vector<int> ed0, std::vector<int> st0, std::unordered_map<std::pair<int, int>, std::map<int, double>, pair_hash>& dominance_map,int& pruned_nodes, int& total_nodes)
 {
     total_nodes++;
     vector<int > stnew;
@@ -212,7 +222,8 @@ void explore(std::vector<int> stnow, int dx, int dy,std::priority_queue<vector<i
     {
         stage newst;
         newst.post = stnew;          // 设置新状态的坐标
-        newst.geth(ed0);             // 计算启发式代价 h
+        double w = dynamic_weight(stnew, st0, ed0);
+        newst.geth(ed0, w);             // 计算启发式代价 h
         newst.g = hs[stnow].g + cost; // 设置实际代价 g
         newst.open = 1;              // 标记为在开放列表中
         newst.parent = stnow;        // 设置父节点
@@ -309,7 +320,7 @@ int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<
             {
                 if (ifvalid(stnow, dx[i], dy[i], ct_point3s_set, ct_edge6s_set, ml))
                     //explore(stnow, dx[i], dy[i], open_list, edstage, ed0);
-                    explore(stnow, dx[i], dy[i], open_list, edstage, ed0, dominance_map, pruned_nodes, total_nodes);
+                    explore(stnow, dx[i], dy[i], open_list, edstage, ed0, st0, dominance_map, pruned_nodes, total_nodes);
             }
         }
         hs[stnow].open = -1;
@@ -344,74 +355,74 @@ void visualize_path(const MapLoader& ml,
     const agent& agent,
     int scale) 
 {
-// 创建彩色地图图像
-int rows = ml.getHeight();
-int cols = ml.getWidth();
-cv::Mat map_img(rows*scale, cols*scale, CV_8UC3, cv::Scalar(255,255,255));
+    // 创建彩色地图图像
+    int rows = ml.getHeight();
+    int cols = ml.getWidth();
+    cv::Mat map_img(rows*scale, cols*scale, CV_8UC3, cv::Scalar(255,255,255));
 
-// 绘制栅格地图
-for(int r=0; r<rows; ++r) {
-for(int c=0; c<cols; ++c) {
-if(ml.getMapData(r,c) == -1) { // 静态障碍物
- cv::rectangle(map_img,
-     cv::Point(c*scale, r*scale),
-     cv::Point((c+1)*scale-1, (r+1)*scale-1),
-     cv::Scalar(0,0,0), // 黑色
-     cv::FILLED);
-}
-else if(ml.getMapData(r,c) > 0) { // 动态障碍物
- cv::rectangle(map_img,
-     cv::Point(c*scale, r*scale),
-     cv::Point((c+1)*scale-1, (r+1)*scale-1),
-     cv::Scalar(150,150,150), // 灰色
-     cv::FILLED);
-}
-}
-}
+    // 绘制栅格地图
+    for(int r=0; r<rows; ++r) {
+        for(int c=0; c<cols; ++c) {
+            if(ml.getMapData(r,c) == -1) { // 静态障碍物
+                cv::rectangle(map_img,
+                            cv::Point(c*scale, r*scale),
+                            cv::Point((c+1)*scale-1, (r+1)*scale-1),
+                            cv::Scalar(0,0,0), // 黑色
+                            cv::FILLED);
+            }
+            else if(ml.getMapData(r,c) > 0) { // 动态障碍物
+                cv::rectangle(map_img,
+                            cv::Point(c*scale, r*scale),
+                            cv::Point((c+1)*scale-1, (r+1)*scale-1),
+                            cv::Scalar(150,150,150), // 灰色
+                            cv::FILLED);
+            }
+        }
+    }
 
-// 绘制路径
-if(!path.empty()) {
-vector<cv::Point> path_points;
-for(const auto& p : path) {
-// 注意坐标转换：地图(r,c)对应图像(x,y)=(c,r)
-int x = p[1] * scale + scale/2;
-int y = p[0] * scale + scale/2;
-path_points.emplace_back(x, y);
-}
+    // 绘制路径
+    if(!path.empty()) {
+        vector<cv::Point> path_points;
+        for(const auto& p : path) {
+    // 注意坐标转换：地图(r,c)对应图像(x,y)=(c,r)
+            int x = p[1] * scale + scale/2;
+            int y = p[0] * scale + scale/2;
+            path_points.emplace_back(x, y);
+        }
 
 // 绘制连线
-for(size_t i=1; i<path_points.size(); ++i) {
-cv::line(map_img, 
-     path_points[i-1], 
-     path_points[i],
-     cv::Scalar(0,0,255), // 红色
-     2);
-}
+        for(size_t i=1; i<path_points.size(); ++i) {
+            cv::line(map_img, 
+                    path_points[i-1], 
+                    path_points[i],
+                    cv::Scalar(0,0,255), // 红色
+                    2);
+        }
 
 // 绘制路径点
-for(const auto& pt : path_points) {
-cv::circle(map_img, pt, 3, cv::Scalar(255,0,0), -1); // 蓝色点
-}
-}
+        for(const auto& pt : path_points) {
+            cv::circle(map_img, pt, 3, cv::Scalar(255,0,0), -1); // 蓝色点
+        }
+    }
 
 // 绘制起点和终点
-cv::Point start(agent.st[1]*scale + scale/2, agent.st[0]*scale + scale/2);
-cv::Point end(agent.ed[1]*scale + scale/2, agent.ed[0]*scale + scale/2);
-cv::circle(map_img, start, 6, cv::Scalar(0,255,0), -1);  // 绿色起点
-cv::circle(map_img, end, 6, cv::Scalar(0,165,255), -1);  // 橙色终点
+    cv::Point start(agent.st[1]*scale + scale/2, agent.st[0]*scale + scale/2);
+    cv::Point end(agent.ed[1]*scale + scale/2, agent.ed[0]*scale + scale/2);
+    cv::circle(map_img, start, 6, cv::Scalar(0,255,0), -1);  // 绿色起点
+    cv::circle(map_img, end, 6, cv::Scalar(0,165,255), -1);  // 橙色终点
 
 // 添加图例
-cv::putText(map_img, "Start", start + cv::Point(10,-10), 
-cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,255,0));
-cv::putText(map_img, "Goal", end + cv::Point(10,-10), 
-cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,165,255));
-cv::putText(map_img, "Path", cv::Point(10,20), 
-cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,0,255));
+    cv::putText(map_img, "Start", start + cv::Point(10,-10), 
+    cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,255,0));
+    cv::putText(map_img, "Goal", end + cv::Point(10,-10), 
+    cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,165,255));
+    cv::putText(map_img, "Path", cv::Point(10,20), 
+    cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,0,255));
 
 // 显示图像
-cv::imshow("Path Visualization", map_img);
-cv::waitKey(0);
+    cv::imshow("Path Visualization", map_img);
+    cv::waitKey(0);
 
 // 保存图像
-cv::imwrite("astar_path.png", map_img);
+    cv::imwrite("astar_path.png", map_img);
 }

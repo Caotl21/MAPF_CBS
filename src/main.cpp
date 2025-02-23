@@ -27,8 +27,8 @@ int main() {
     //std::cout << "Welcome to the CBS project!" << std::endl;
     exampleFunction();
 
-    ml.loadMap("/mnt/wsl_workspace/CBS/benchmark/random-32-32-10/random-32-32-10.map");//绝对路径
-    ScenarioLoader sl("/mnt/wsl_workspace/CBS/benchmark/random-32-32-10/random-32-32-10-random-1.scen");//绝对路径
+    ml.loadMap("/home/caotl/MAPF_CBS/benchmark/random-32-32-10/random-32-32-10.map");//绝对路径
+    ScenarioLoader sl("/home/caotl/MAPF_CBS/benchmark/random-32-32-10/random-32-32-10-random-1.scen");//绝对路径
     
     // cout<<"Num of Experiments "<<sl.GetNumExperiments()<<endl;
     // int n;

@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/g++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/mnt/wsl_workspace/CBS/include -isystem /usr/include/opencv4
+CXX_INCLUDES = -I/home/caotl/MAPF_CBS/include -isystem /usr/include/opencv4
 
-CXX_FLAGS = -g
+CXX_FLAGS = 
 

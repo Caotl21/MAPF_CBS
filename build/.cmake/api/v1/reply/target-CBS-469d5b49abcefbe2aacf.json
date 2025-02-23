@@ -46,17 +46,11 @@
 	"compileGroups" : 
 	[
 		{
-			"compileCommandFragments" : 
-			[
-				{
-					"fragment" : "-g"
-				}
-			],
 			"includes" : 
 			[
 				{
 					"backtrace" : 3,
-					"path" : "/mnt/wsl_workspace/CBS/include"
+					"path" : "/home/caotl/MAPF_CBS/include"
 				},
 				{
 					"backtrace" : 3,
@@ -81,10 +75,6 @@
 	{
 		"commandFragments" : 
 		[
-			{
-				"fragment" : "-g",
-				"role" : "flags"
-			},
 			{
 				"fragment" : "",
 				"role" : "flags"

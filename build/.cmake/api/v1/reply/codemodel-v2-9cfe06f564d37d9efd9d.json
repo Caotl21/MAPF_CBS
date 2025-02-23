@@ -6,7 +6,7 @@
 			[
 				{
 					"build" : ".",
-					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
+					"jsonFile" : "directory-.-f5ebdc15457944623624.json",
 					"minimumCMakeVersion" : 
 					{
 						"string" : "3.10"
@@ -19,7 +19,7 @@
 					]
 				}
 			],
-			"name" : "Debug",
+			"name" : "",
 			"projects" : 
 			[
 				{
@@ -39,7 +39,7 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "CBS::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-CBS-Debug-89b871b1247ebd0eaf19.json",
+					"jsonFile" : "target-CBS-469d5b49abcefbe2aacf.json",
 					"name" : "CBS",
 					"projectIndex" : 0
 				}
@@ -49,8 +49,8 @@
 	"kind" : "codemodel",
 	"paths" : 
 	{
-		"build" : "/mnt/wsl_workspace/CBS/build",
-		"source" : "/mnt/wsl_workspace/CBS"
+		"build" : "/home/caotl/MAPF_CBS/build",
+		"source" : "/home/caotl/MAPF_CBS"
 	},
 	"version" : 
 	{
