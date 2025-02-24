@@ -158,49 +158,49 @@ void explore(std::vector<int> stnow, int dx, int dy,std::priority_queue<vector<i
     //用于剪枝比较
     double new_g = hs[stnow].g + cost;
 
-    //Dominance剪枝
-     /* 分层支配剪枝策略 */
-    bool dominated = false;
-    std::pair<int, int> pos(stnew[0], stnew[1]);
-    int t_new = stnew[2];
+    // //Dominance剪枝
+    //  /* 分层支配剪枝策略 */
+    // bool dominated = false;
+    // std::pair<int, int> pos(stnew[0], stnew[1]);
+    // int t_new = stnew[2];
      
-     // 查找空间位置对应的时空记录
-    auto& pos_records = dominance_map[pos];
+    //  // 查找空间位置对应的时空记录
+    // auto& pos_records = dominance_map[pos];
     
-     // 检查所有时间步<=当前时间的记录
-    auto it_min = pos_records.upper_bound(t_new);
-    if (it_min != pos_records.begin()) {
-        --it_min; // 定位到最后一个<=t_new的记录
-        while (true) {
-            if (it_min->second <= new_g) {
-                dominated = true;
-                break;
-            }
-            if (it_min == pos_records.begin()) break;
-            --it_min;
-       }
-    }
+    //  // 检查所有时间步<=当前时间的记录
+    // auto it_min = pos_records.upper_bound(t_new);
+    // if (it_min != pos_records.begin()) {
+    //     --it_min; // 定位到最后一个<=t_new的记录
+    //     while (true) {
+    //         if (it_min->second <= new_g) {
+    //             dominated = true;
+    //             break;
+    //         }
+    //         if (it_min == pos_records.begin()) break;
+    //         --it_min;
+    //    }
+    // }
      
-    if (dominated) {
-        pruned_nodes++;
-        return;
-    }
+    // if (dominated) {
+    //     pruned_nodes++;
+    //     return;
+    // }
  
-     // 插入新记录并清理被支配的后续记录
-    auto [inserted_it, success] = pos_records.insert({t_new, new_g});
-    if (!success && new_g < inserted_it->second) {
-        inserted_it->second = new_g; // 更新更优的g值
-    }
+    //  // 插入新记录并清理被支配的后续记录
+    // auto [inserted_it, success] = pos_records.insert({t_new, new_g});
+    // if (!success && new_g < inserted_it->second) {
+    //     inserted_it->second = new_g; // 更新更优的g值
+    // }
      
-     // 删除被当前节点支配的后续节点
-    auto it_clean = pos_records.upper_bound(t_new);
-    while (it_clean != pos_records.end()) {
-        if (it_clean->second >= new_g) {
-            it_clean = pos_records.erase(it_clean);
-        } else {
-            ++it_clean;
-        }
-    }
+    //  // 删除被当前节点支配的后续节点
+    // auto it_clean = pos_records.upper_bound(t_new);
+    // while (it_clean != pos_records.end()) {
+    //     if (it_clean->second >= new_g) {
+    //         it_clean = pos_records.erase(it_clean);
+    //     } else {
+    //         ++it_clean;
+    //     }
+    // }
 
     // 在hs中查找stnew
     auto it = hs.find(stnew);
@@ -345,7 +345,7 @@ int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<
     ml.setMapData(as[i].ed[0],as[i].ed[1],res);
     hs.clear();
     // 输出剪枝统计
-    std::cout << "Dominance pruning rate: " << (pruned_nodes * 100.0 / total_nodes) << "%" << std::endl;
+    //std::cout << "Dominance pruning rate: " << (pruned_nodes * 100.0 / total_nodes) << "%" << std::endl;
     return res;
 }
 
@@ -418,6 +418,15 @@ void visualize_path(const MapLoader& ml,
     cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,165,255));
     cv::putText(map_img, "Path", cv::Point(10,20), 
     cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,0,255));
+
+// // 在路径绘制中添加密度可视化
+//     cv::Mat density_img;
+//     cv::normalize(ml.getDensityMap(), density_img, 0, 255, cv::NORM_MINMAX);
+//     density_img.convertTo(density_img, CV_8UC1);
+//     cv::applyColorMap(density_img, density_img, cv::COLORMAP_JET);
+
+// // 叠加路径到密度图
+//     cv::addWeighted(map_img, 0.7, density_img, 0.3, 0, map_img);
 
 // 显示图像
     cv::imshow("Path Visualization", map_img);
