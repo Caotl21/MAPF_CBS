@@ -18,7 +18,7 @@ void agent::set(int stx,int sty,int edx,int edy)
     ed.push_back(edy);
 }
 
-agent* as;
+agent* as; 
 
 // 启发式代价h  曼哈顿距离
 //void stage::geth(vector<int > ed){
@@ -32,12 +32,14 @@ void stage::geth(vector<int> ed, double w) {
     h = w * max(dx, dy); // 切比雪夫距离
 }
 
+
+
 // 动态权重计算函数
 double dynamic_weight(const vector<int>& current, const vector<int>& start, 
     const vector<int>& goal) {
      // 进度因子：已走路径占总预估路径的比例
      double progress = current[2] / (abs(start[0]-goal[0]) + abs(start[1]-goal[1]) + 1e-6);
-    // 动态权重曲线：初始阶段权重高，后期逐渐降低
+    // 动态权重曲线：初始阶段权重高，后期逐渐降低: sigmoid 
     return 1.5 - 0.5 * (1.0 / (1.0 + exp(-10*(progress-0.7))));
 }
 
@@ -64,22 +66,6 @@ bool stacmp::operator()(const vector<int>& a,const vector<int >& b) const
 {
     return (hs[a].g+hs[a].h)>(hs[b].g+hs[b].h);
 }
-// 判断是否移动是否合法
-// bool ifvalid(vector<int > stnow ,int dx ,int dy ,vector<vector<int> > ct_point3s ,vector<vector<int > > ct_edge6s)
-// {
-//     int xnew = stnow[0] + dx;
-//     int ynew = stnow[1] + dy;
-//     int tnew = stnow[2] + 1;
-//     // 边冲突
-//     for(int i =0;i<ct_edge6s.size();++i)
-//     {
-//         if((stnow[0]==ct_edge6s[i][0])&&(stnow[1]==ct_edge6s[i][1])&&(stnow[2]==ct_edge6s[i][2])&&(xnew==ct_edge6s[i][3])&&(ynew==ct_edge6s[i][4])) return false;
-//     }
-//     // 位置冲突
-//     for(int i=0;i<ct_point3s.size();++i)
-//     {
-//         if((xnew==ct_point3s[i][0])&&(ynew==ct_point3s[i][1])&&(tnew==ct_point3s[i][2])) return false;
-//     }
 
 // 使用哈希表加速冲突检测
 //bool ifvalid(const std::vector<int>& stnow, int dx, int dy, const std::unordered_set<std::vector<int>, Hashfunc, Equalfunc>& ct_point3s_set, const std::vector<std::vector<int>>& ct_edge6s)
@@ -91,19 +77,6 @@ bool ifvalid(const std::vector<int>& stnow, int dx, int dy,
     int xnew = stnow[0] + dx;
     int ynew = stnow[1] + dy;
     int tnew = stnow[2] + 1;
-
-    // // 边冲突
-    // for (const auto& edge : ct_edge6s) {
-    //     if (stnow[0] == edge[0] && stnow[1] == edge[1] && stnow[2] == edge[2] &&
-    //         xnew == edge[3] && ynew == edge[4]) {
-    //         return false;
-    //     }
-    // }
-
-    // // 位置冲突
-    // if (ct_point3s_set.find({xnew, ynew, tnew}) != ct_point3s_set.end()) {
-    //     return false;
-    // }
 
     // 边冲突检测o(1)
     Edge5D current_edge{stnow[0], stnow[1], stnow[2], xnew, ynew};
@@ -152,55 +125,19 @@ void explore(std::vector<int> stnow, int dx, int dy,std::priority_queue<vector<i
     stnew.push_back(stnow[0]+dx);
     stnew.push_back(stnow[1]+dy);
     stnew.push_back(stnow[2]+1);
+    // 计算当前移动方向
+    pair<int,int> current_dir(dx, dy);
+    
+    // 获取父节点方向（如果存在）
+    pair<int,int> parent_dir(0,0);
+    if(!stnow.empty() && hs.find(stnow) != hs.end()) {
+        parent_dir = hs[stnow].dir;
+    }
 
     // 计算移动代价
     double cost = (dx != 0 && dy != 0) ? std::sqrt(2) : 1;
-    //用于剪枝比较
+                // + 0.5 *ml.getDensity(stnew[0], stnew[1]);
     double new_g = hs[stnow].g + cost;
-
-    // //Dominance剪枝
-    //  /* 分层支配剪枝策略 */
-    // bool dominated = false;
-    // std::pair<int, int> pos(stnew[0], stnew[1]);
-    // int t_new = stnew[2];
-     
-    //  // 查找空间位置对应的时空记录
-    // auto& pos_records = dominance_map[pos];
-    
-    //  // 检查所有时间步<=当前时间的记录
-    // auto it_min = pos_records.upper_bound(t_new);
-    // if (it_min != pos_records.begin()) {
-    //     --it_min; // 定位到最后一个<=t_new的记录
-    //     while (true) {
-    //         if (it_min->second <= new_g) {
-    //             dominated = true;
-    //             break;
-    //         }
-    //         if (it_min == pos_records.begin()) break;
-    //         --it_min;
-    //    }
-    // }
-     
-    // if (dominated) {
-    //     pruned_nodes++;
-    //     return;
-    // }
- 
-    //  // 插入新记录并清理被支配的后续记录
-    // auto [inserted_it, success] = pos_records.insert({t_new, new_g});
-    // if (!success && new_g < inserted_it->second) {
-    //     inserted_it->second = new_g; // 更新更优的g值
-    // }
-     
-    //  // 删除被当前节点支配的后续节点
-    // auto it_clean = pos_records.upper_bound(t_new);
-    // while (it_clean != pos_records.end()) {
-    //     if (it_clean->second >= new_g) {
-    //         it_clean = pos_records.erase(it_clean);
-    //     } else {
-    //         ++it_clean;
-    //     }
-    // }
 
     // 在hs中查找stnew
     auto it = hs.find(stnew);
@@ -221,12 +158,14 @@ void explore(std::vector<int> stnow, int dx, int dy,std::priority_queue<vector<i
     else
     {
         stage newst;
+        double penalty = newst.turn_penalty(parent_dir);
         newst.post = stnew;          // 设置新状态的坐标
         double w = dynamic_weight(stnew, st0, ed0);
         newst.geth(ed0, w);             // 计算启发式代价 h
-        newst.g = hs[stnow].g + cost; // 设置实际代价 g
+        newst.g = hs[stnow].g + cost + penalty; // 设置实际代价 g
         newst.open = 1;              // 标记为在开放列表中
         newst.parent = stnow;        // 设置父节点
+        newst.dir = current_dir;     // 记录当前移动方向
         hs[stnew] = newst;           // 加入状态表
         open_list.push(stnew);       // 加入开放列表
 
@@ -255,13 +194,6 @@ int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<
         return -1;
     }
 
-    // // 将 ct_point3s 转换为 unordered_set 以加速冲突检测
-    // unordered_set<vector<int>, Hashfunc, Equalfunc> ct_point3s_set;
-    // for (const auto& point : ct_point3s) 
-    // {
-    //    ct_point3s_set.insert(point);
-    // }
-
      // 转换边冲突数据为哈希集合
      std::unordered_set<Edge5D> ct_edge6s_set;
      ct_edge6s_set.reserve(ct_edge6s.size());  // 预分配空间
@@ -269,7 +201,6 @@ int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<
          ct_edge6s_set.emplace(e[0], e[1], e[2], e[3], e[4]);
      }
     // 将 ct_point3s 转换为 unordered_set 以加速冲突检测
-    //unordered_set<vector<int>, Hashfunc, Equalfunc> ct_point3s_set;
     std::unordered_set<Point3D> ct_point3s_set;
     ct_point3s_set.reserve(ct_point3s.size());
     for (const auto& p : ct_point3s) {
@@ -343,16 +274,38 @@ int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<
     }
     //将Agent走到的终点设置为障碍物
     ml.setMapData(as[i].ed[0],as[i].ed[1],res);
-    hs.clear();
-    // 输出剪枝统计
-    //std::cout << "Dominance pruning rate: " << (pruned_nodes * 100.0 / total_nodes) << "%" << std::endl;
+
+    //为了绘制搜索区域
+    //hs.clear();
+
     return res;
 }
+
+// 在可视化函数前添加辅助函数
+std::vector<std::vector<bool>> generate_visited_from_hs(const std::unordered_map<std::vector<int>, stage, Hashfunc, Equalfunc>& hs, 
+    int map_height, int map_width)
+{
+std::vector<std::vector<bool>> visited(map_height, std::vector<bool>(map_width, false));
+
+// 遍历哈希表所有键
+for(const auto& entry : hs) {
+const std::vector<int>& state = entry.first;
+// 假设状态前两维是行列坐标
+int r = state[0]; 
+int c = state[1];
+if(r >=0 && r < map_height && c >=0 && c < map_width) {
+visited[r][c] = true;
+}
+}
+return visited;
+}
+
 
 //可视化处理
 void visualize_path(const MapLoader& ml, 
     const std::vector<std::vector<int>>& path,
     const agent& agent,
+    const std::unordered_map<std::vector<int>, stage, Hashfunc, Equalfunc>& hs,
     int scale) 
 {
     // 创建彩色地图图像
@@ -376,6 +329,32 @@ void visualize_path(const MapLoader& ml,
                             cv::Point((c+1)*scale-1, (r+1)*scale-1),
                             cv::Scalar(150,150,150), // 灰色
                             cv::FILLED);
+            }
+        }
+    }
+
+    auto visited = generate_visited_from_hs(hs, ml.getHeight(), ml.getWidth());
+    // 绘制被访问过的节点
+    for (int r = 0; r < visited.size(); ++r) {
+        for (int c = 0; c < visited[r].size(); ++c) {
+            if (visited[r][c]) {
+                int center_x = c*scale + scale/2;
+                int center_y = r*scale + scale/2;
+                int arm_length = scale/4;  // 十字臂长
+                
+                // 绘制水平线
+                cv::line(map_img,
+                         cv::Point(center_x - arm_length, center_y),
+                         cv::Point(center_x + arm_length, center_y),
+                         cv::Scalar(0, 0, 0), 
+                         2);  // 线宽
+                
+                // 绘制垂直线
+                cv::line(map_img,
+                         cv::Point(center_x, center_y - arm_length),
+                         cv::Point(center_x, center_y + arm_length),
+                         cv::Scalar(0, 0, 0),
+                         2);
             }
         }
     }
@@ -419,14 +398,29 @@ void visualize_path(const MapLoader& ml,
     cv::putText(map_img, "Path", cv::Point(10,20), 
     cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,0,255));
 
-// // 在路径绘制中添加密度可视化
-//     cv::Mat density_img;
-//     cv::normalize(ml.getDensityMap(), density_img, 0, 255, cv::NORM_MINMAX);
-//     density_img.convertTo(density_img, CV_8UC1);
-//     cv::applyColorMap(density_img, density_img, cv::COLORMAP_JET);
 
-// // 叠加路径到密度图
-//     cv::addWeighted(map_img, 0.7, density_img, 0.3, 0, map_img);
+    cv::Mat density_img;
+    cv::Mat scaled_density;
+    cv::resize(ml.getDensityMap(), scaled_density, 
+          cv::Size(cols*scale, rows*scale), // 注意OpenCV尺寸顺序是(width, height)
+          0, 0, cv::INTER_NEAREST); // 保持离散值的清晰度
+    cv::normalize(
+        scaled_density,  // 直接使用OpenCV矩阵
+        density_img,
+        0, 255,
+        cv::NORM_MINMAX,
+        CV_8UC1  // 确保输出为8位无符号单通道 [!code focus]
+    );
+
+    // 应用伪彩色时需要转换为3通道
+    cv::applyColorMap(density_img, density_img, cv::COLORMAP_JET);
+
+    // 叠加时确保map_img也是彩色图
+    if (map_img.channels() == 1) {
+        cv::cvtColor(map_img, map_img, cv::COLOR_GRAY2BGR);
+    }
+
+    cv::addWeighted(map_img, 0.7, density_img, 0.3, 0, map_img);
 
 // 显示图像
     cv::imshow("Path Visualization", map_img);

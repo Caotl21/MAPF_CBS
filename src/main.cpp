@@ -50,7 +50,7 @@ int main() {
     // cout << "Algorithm execution time: " << duration << " ms" << endl;
 
     // 测试参数设置
-    const int test_agent_index = 3;  // 测试第0个agent
+    const int test_agent_index = 15;  // 测试第0个agent
     const bool enable_visualization = true; // 是否显示路径
 
     // 初始化agent
@@ -88,7 +88,7 @@ int main() {
     if(total_cost != -1) {
         // 注意路径是逆序存储的，需要反转
         reverse(final_path.begin(), final_path.end());
-        visualize_path(ml, final_path, test_agent);
+        visualize_path(ml, final_path, test_agent, hs);
     }
 
     // // 路径可视化输出
@@ -99,7 +99,7 @@ int main() {
     //              << (*it)[0] << ", " << (*it)[1] << ")\n";
     //     }
     // }
-    //alarm(0);
+    // alarm(0);
 
     return 0;
 }

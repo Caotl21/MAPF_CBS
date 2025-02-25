@@ -75,15 +75,33 @@ extern int num_agent;
 extern agent* as;
 
 struct stage{
-    std::vector<int > post;
-    std::vector<int > parent;
-    int agent;
-    std::vector<int > tvalid_agent;
-    int g,h;
-    int open = 0;
-    void geth(std::vector<int > ed, double w = 1.0);
-    //void ptf();
-    int direction;
+        std::vector<int > post;
+        std::vector<int > parent;
+        int agent;
+        std::vector<int > tvalid_agent;
+        int g,h;
+        int open = 0;
+        void geth(std::vector<int > ed, double w = 1.0);
+        //void ptf();
+        std::pair<int,int> dir;
+         // 计算方向变化惩罚
+        double turn_penalty(const std::pair<int,int>& prev_dir) const {
+            if(prev_dir == std::make_pair(0,0)) return 0; // 初始方向无惩罚
+            int dot = dir.first*prev_dir.first + dir.second*prev_dir.second;  // 计算方向向量点积
+            double angle = acos(dot / (norm(dir)*norm(prev_dir)));   // 计算角度惩罚（单位：弧度）
+            if(angle > M_PI/2) {
+                // 惩罚系数（可调整）
+                const double PENALTY_WEIGHT = 5.0; 
+                return PENALTY_WEIGHT * (angle - M_PI/2);
+            }
+            return 0;
+        }
+
+    private:
+        double norm(const std::pair<int,int>& d) const {
+            return sqrt(d.first*d.first + d.second*d.second);
+        }
+
 };
 
 struct Hashfunc {
@@ -126,9 +144,13 @@ int sta(agent* as, int i,
 
 extern std::unordered_map<std::vector<int >,stage,Hashfunc,Equalfunc> hs;
 
+std::vector<std::vector<bool>> generate_visited_from_hs(const std::unordered_map<std::vector<int>, stage, Hashfunc, Equalfunc>& hs, 
+    int map_height, int map_width);
+
 void visualize_path(const MapLoader& ml, 
     const std::vector<std::vector<int>>& path,
     const agent& agent,
-    int scale=20);
+    const std::unordered_map<std::vector<int>, stage, Hashfunc, Equalfunc>& hs,
+    int scale=30);
 
 #endif 
