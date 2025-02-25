@@ -398,29 +398,29 @@ void visualize_path(const MapLoader& ml,
     cv::putText(map_img, "Path", cv::Point(10,20), 
     cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,0,255));
 
+// // 绘制障碍物密度图
+//     cv::Mat density_img;
+//     cv::Mat scaled_density;
+//     cv::resize(ml.getDensityMap(), scaled_density, 
+//           cv::Size(cols*scale, rows*scale), // 注意OpenCV尺寸顺序是(width, height)
+//           0, 0, cv::INTER_NEAREST); // 保持离散值的清晰度
+//     cv::normalize(
+//         scaled_density,  // 直接使用OpenCV矩阵
+//         density_img,
+//         0, 255,
+//         cv::NORM_MINMAX,
+//         CV_8UC1  // 确保输出为8位无符号单通道 [!code focus]
+//     );
 
-    cv::Mat density_img;
-    cv::Mat scaled_density;
-    cv::resize(ml.getDensityMap(), scaled_density, 
-          cv::Size(cols*scale, rows*scale), // 注意OpenCV尺寸顺序是(width, height)
-          0, 0, cv::INTER_NEAREST); // 保持离散值的清晰度
-    cv::normalize(
-        scaled_density,  // 直接使用OpenCV矩阵
-        density_img,
-        0, 255,
-        cv::NORM_MINMAX,
-        CV_8UC1  // 确保输出为8位无符号单通道 [!code focus]
-    );
+//     // 应用伪彩色时需要转换为3通道
+//     cv::applyColorMap(density_img, density_img, cv::COLORMAP_JET);
 
-    // 应用伪彩色时需要转换为3通道
-    cv::applyColorMap(density_img, density_img, cv::COLORMAP_JET);
+//     // 叠加时确保map_img也是彩色图
+//     if (map_img.channels() == 1) {
+//         cv::cvtColor(map_img, map_img, cv::COLOR_GRAY2BGR);
+//     }
 
-    // 叠加时确保map_img也是彩色图
-    if (map_img.channels() == 1) {
-        cv::cvtColor(map_img, map_img, cv::COLOR_GRAY2BGR);
-    }
-
-    cv::addWeighted(map_img, 0.7, density_img, 0.3, 0, map_img);
+//     cv::addWeighted(map_img, 0.7, density_img, 0.3, 0, map_img);
 
 // 显示图像
     cv::imshow("Path Visualization", map_img);
