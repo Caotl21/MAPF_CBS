@@ -66,10 +66,12 @@ int main() {
 
     // 执行A*算法测试
     auto start = high_resolution_clock::now();
-    int total_cost = sta(&test_agent, 0, empty_ct_points, empty_ct_edges, final_path);
+    sta(&test_agent, 0, empty_ct_points, empty_ct_edges, final_path);
     auto end = high_resolution_clock::now();
- 
-    // 结果分析
+
+    double total_cost = calculatePathCost(final_path);
+    
+    //结果分析
     if(total_cost == -1) {
         cout << "Path not found!" << endl;
         return -1;
@@ -85,7 +87,7 @@ int main() {
          << duration_cast<microseconds>(end - start).count() 
          << " 微秒\n";
 
-    if(total_cost != -1) {
+    if(final_path.size()!=0) {
         // 注意路径是逆序存储的，需要反转
         reverse(final_path.begin(), final_path.end());
         visualize_path(ml, final_path, test_agent, hs);

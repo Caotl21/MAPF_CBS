@@ -80,6 +80,7 @@ struct stage{
         int agent;
         std::vector<int > tvalid_agent;
         int g,h;
+        int res;
         int open = 0;
         void geth(std::vector<int > ed, double w = 1.0);
         //void ptf();
@@ -92,7 +93,7 @@ struct stage{
             //if(angle > M_PI/2) {
                 // 惩罚系数（可调整）
                 const double PENALTY_WEIGHT = 1.0; 
-                return PENALTY_WEIGHT * (angle - M_PI/2);
+                return PENALTY_WEIGHT * (angle);
             //}
             //return 0;
         }
@@ -144,6 +145,8 @@ extern std::unordered_map<std::vector<int >,stage,Hashfunc,Equalfunc> hs;
 
 std::vector<std::vector<bool>> generate_visited_from_hs(const std::unordered_map<std::vector<int>, stage, Hashfunc, Equalfunc>& hs, 
     int map_height, int map_width);
+
+double calculatePathCost(const std::vector<std::vector<int>>& path);
 
 void visualize_path(const MapLoader& ml, 
     const std::vector<std::vector<int>>& path,

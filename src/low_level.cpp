@@ -135,9 +135,9 @@ void explore(std::vector<int> stnow, int dx, int dy,
     }
 
     // 计算移动代价
-    double cost = (dx != 0 && dy != 0) ? std::sqrt(2) : 1;
-                 + 0.5 *ml.getDensity(stnew[0], stnew[1]);
-    double new_g = hs[stnow].g + cost;
+    int cost = (dx != 0 && dy != 0) ? std::sqrt(2) : 1;
+                 + 0.5 *ml.getDensity(stnew[1], stnew[0]);
+    //new_g = hs[stnow].g + cost;
 
     // 在hs中查找stnew
     auto it = hs.find(stnew);
@@ -179,10 +179,6 @@ void explore(std::vector<int> stnow, int dx, int dy,
 //int sta(agent* as,int i,vector<vector<int> > ct_point3s,vector<vector<int > > ct_edge6s,vector<vector<int > >& pths)
 int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<int > > ct_edge6s,vector<vector<int > >& pths)
 {
-    // 初始化支配记录结构
-    std::unordered_map<std::pair<int, int>, std::map<int, double>, pair_hash> dominance_map;
-    int pruned_nodes = 0;
-    int total_nodes = 0;
     ml.setMapData(as[i].ed[0],as[i].ed[1],0); // 设置终点在地图上的数据
     
     vector<int > st0 = as[i].st;   // 得到该agent的起点
@@ -211,8 +207,8 @@ int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<
     }
 
     stage st;                     //定义起点
-    int res = 0;                  //cost
     vector<int > edstage;         //定义终点
+    int res = 0;
 
     //对起点进行初始化
     st.post = st0;             
@@ -230,8 +226,11 @@ int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<
     int dx[] = {0, 1, 0, -1, 1, 1, -1, -1};
     int dy[] = {1, 0, -1, 0, 1, -1, 1, -1};
 
-    int dx_jump[] = {0, 2, 0, -2, 2, 2, -2, -2};
-    int dy_jump[] = {2, 0, -2, 0, 2, -2, 2, -2};
+    int dx_jump2[] = {0, 2, 0, -2, 2, 2, -2, -2};
+    int dy_jump2[] = {2, 0, -2, 0, 2, -2, 2, -2};
+
+    int dx_jump3[] = {0, 3, 0, -3, 3, 3, -3, -3};
+    int dy_jump3[] = {3, 0, -3, 0, 3, -3, 3, -3};
 
     //定义当前已经走过的路径
     vector<vector<int > > pathnow;
@@ -250,15 +249,19 @@ int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<
         }
         if(hs[stnow].open==1)
         {
-            double current_density = ml.getDensity(stnow[0],stnow[1]);
+            double current_density = ml.getDensity(stnow[1],stnow[0]);
             //低密度区
-            if(current_density < 0.2){
+            if(current_density == 0){
              // 向八个方向探索
                for (int i = 0; i < 8; ++i) {
                     // 检查跳步中途是否有障碍物
                     if (ifvalid(stnow, dx[i], dy[i], ct_point3s_set, ct_edge6s_set, ml)){
-                        if (ifvalid(stnow, dx_jump[i], dy_jump[i], ct_point3s_set, ct_edge6s_set, ml)){
-                            explore(stnow, dx_jump[i], dy_jump[i], open_list, edstage, ed0, st0);
+                        if (ifvalid(stnow, dx_jump2[i], dy_jump2[i], ct_point3s_set, ct_edge6s_set, ml)){
+                            //
+                            if (ifvalid(stnow, dx_jump3[i], dy_jump3[i], ct_point3s_set, ct_edge6s_set, ml)){
+                                explore(stnow, dx_jump3[i], dy_jump3[i], open_list, edstage, ed0, st0);
+                            }
+                            explore(stnow, dx_jump2[i], dy_jump2[i], open_list, edstage, ed0, st0);
                         }
                         explore(stnow, dx[i], dy[i], open_list, edstage, ed0, st0);
                     }
@@ -266,7 +269,7 @@ int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<
                 }
             }
             //高密度区
-            else if(current_density > 0.7){
+            else if(current_density > 0.6){
                 // 向八个方向探索
                for (int i = 0; i < 8; ++i) {
                     if (ifvalid(stnow, dx[i], dy[i], ct_point3s_set, ct_edge6s_set, ml)){
@@ -307,10 +310,53 @@ int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<
     //将Agent走到的终点设置为障碍物
     ml.setMapData(as[i].ed[0],as[i].ed[1],res);
 
+    return res;
     //为了绘制搜索区域
     //hs.clear();
 
-    return res;
+}
+
+// 路径成本计算函数
+double calculatePathCost(const std::vector<std::vector<int>>& path) {
+    double total_cost = 0.0;
+    
+    // 路径至少需要2个点才能计算移动成本
+    if (path.size() < 2) return 0.0;
+
+    for (size_t i = 1; i < path.size(); ++i) {
+        const auto& prev = path[i-1];
+        const auto& curr = path[i];
+        
+        // 确保坐标维度正确
+        if (prev.size() < 2 || curr.size() < 2) {
+            cerr << "Invalid coordinate dimension at step " << i << endl;
+            continue;
+        }
+
+        int dx = abs(curr[0] - prev[0]);
+        int dy = abs(curr[1] - prev[1]);
+
+        // 计算移动类型
+        if (dx == 1 && dy == 1) {
+            total_cost += sqrt(2); // 对角线移动
+        } else if ((dx == 1 && dy == 0) || (dx == 0 && dy == 1)) {
+            total_cost += 1.0; // 直线移动
+        } else if (dx == 2 && dy == 2) {
+            total_cost += 2*sqrt(2); // 对角线移动jump
+        } else if ((dx == 2 && dy == 0) || (dx == 0 && dy == 2)) {
+            total_cost += 2.0; // 直线移动jump
+        } else if (dx == 3 && dy == 3) {
+            total_cost += 3*sqrt(2); // 对角线移动jump
+        } else if ((dx == 3 && dy == 0) || (dx == 0 && dy == 3)) {
+            total_cost += 3.0; // 直线移动jump 
+        } else {
+            // 异常移动处理
+            cerr << "Warning: Irregular movement from (" 
+                 << prev[0] << "," << prev[1] << ") to ("
+                 << curr[0] << "," << curr[1] << ")" << endl;
+        }
+    }
+    return total_cost;
 }
 
 // 在可视化函数前添加辅助函数
@@ -406,13 +452,13 @@ void visualize_path(const MapLoader& ml,
             cv::line(map_img, 
                     path_points[i-1], 
                     path_points[i],
-                    cv::Scalar(0,0,255), // 红色
-                    2);
+                    cv::Scalar(255,0,0), // 红色
+                    3);
         }
 
 // 绘制路径点
         for(const auto& pt : path_points) {
-            cv::circle(map_img, pt, 5, cv::Scalar(255,0,0), -1); // 蓝色点
+            cv::circle(map_img, pt, 7, cv::Scalar(0,0,255), -1); // 蓝色点
         }
     }
 
