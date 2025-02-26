@@ -89,12 +89,12 @@ struct stage{
             if(prev_dir == std::make_pair(0,0)) return 0; // 初始方向无惩罚
             int dot = dir.first*prev_dir.first + dir.second*prev_dir.second;  // 计算方向向量点积
             double angle = acos(dot / (norm(dir)*norm(prev_dir)));   // 计算角度惩罚（单位：弧度）
-            if(angle > M_PI/2) {
+            //if(angle > M_PI/2) {
                 // 惩罚系数（可调整）
-                const double PENALTY_WEIGHT = 5.0; 
+                const double PENALTY_WEIGHT = 3.0; 
                 return PENALTY_WEIGHT * (angle - M_PI/2);
-            }
-            return 0;
+            //}
+            //return 0;
         }
 
     private:
@@ -132,9 +132,7 @@ bool ifvalid(const std::vector<int>& stnow, int dx, int dy,
 
 void explore(std::vector<int> stnow, int dx, int dy,
     std::priority_queue<std::vector<int>, std::vector<std::vector<int>>, stacmp>& open_list,
-    std::vector<int>& edstage, std::vector<int> ed0, std::vector<int> st0, 
-    std::unordered_map<std::pair<int, int>, std::map<int, double>, pair_hash>& dominance_map,
-    int& pruned_nodes, int& total_nodes);
+    std::vector<int>& edstage, std::vector<int> ed0, std::vector<int> st0);
 
 int sta(agent* as, int i,
     std::vector<std::vector<int>> ct_point3s,

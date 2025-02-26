@@ -117,10 +117,10 @@ bool ifvalid(const std::vector<int>& stnow, int dx, int dy,
 }
 
 // 节点拓展
-//void explore(vector<int > stnow,int dx,int dy,priority_queue<vector<int >,vector<vector<int>>, stacmp > &open_list,vector<int >& edstage,vector<int > ed0)
-void explore(std::vector<int> stnow, int dx, int dy,std::priority_queue<vector<int>, std::vector<vector<int>>, stacmp>& open_list,std::vector<int>& edstage, std::vector<int> ed0, std::vector<int> st0, std::unordered_map<std::pair<int, int>, std::map<int, double>, pair_hash>& dominance_map,int& pruned_nodes, int& total_nodes)
+void explore(std::vector<int> stnow, int dx, int dy,
+    std::priority_queue<std::vector<int>, std::vector<std::vector<int>>, stacmp>& open_list,
+    std::vector<int>& edstage, std::vector<int> ed0, std::vector<int> st0)
 {
-    total_nodes++;
     vector<int > stnew;
     stnew.push_back(stnow[0]+dx);
     stnew.push_back(stnow[1]+dy);
@@ -136,7 +136,7 @@ void explore(std::vector<int> stnow, int dx, int dy,std::priority_queue<vector<i
 
     // 计算移动代价
     double cost = (dx != 0 && dy != 0) ? std::sqrt(2) : 1;
-                // + 0.5 *ml.getDensity(stnew[0], stnew[1]);
+            //     + 0.5 *ml.getDensity(stnew[0], stnew[1]);
     double new_g = hs[stnow].g + cost;
 
     // 在hs中查找stnew
@@ -251,7 +251,7 @@ int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<
             {
                 if (ifvalid(stnow, dx[i], dy[i], ct_point3s_set, ct_edge6s_set, ml))
                     //explore(stnow, dx[i], dy[i], open_list, edstage, ed0);
-                    explore(stnow, dx[i], dy[i], open_list, edstage, ed0, st0, dominance_map, pruned_nodes, total_nodes);
+                    explore(stnow, dx[i], dy[i], open_list, edstage, ed0, st0);
             }
         }
         hs[stnow].open = -1;
@@ -398,29 +398,29 @@ void visualize_path(const MapLoader& ml,
     cv::putText(map_img, "Path", cv::Point(10,20), 
     cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,0,255));
 
-// // 绘制障碍物密度图
-//     cv::Mat density_img;
-//     cv::Mat scaled_density;
-//     cv::resize(ml.getDensityMap(), scaled_density, 
-//           cv::Size(cols*scale, rows*scale), // 注意OpenCV尺寸顺序是(width, height)
-//           0, 0, cv::INTER_NEAREST); // 保持离散值的清晰度
-//     cv::normalize(
-//         scaled_density,  // 直接使用OpenCV矩阵
-//         density_img,
-//         0, 255,
-//         cv::NORM_MINMAX,
-//         CV_8UC1  // 确保输出为8位无符号单通道 [!code focus]
-//     );
+// 绘制障碍物密度图
+    cv::Mat density_img;
+    cv::Mat scaled_density;
+    cv::resize(ml.getDensityMap(), scaled_density, 
+          cv::Size(cols*scale, rows*scale), // 注意OpenCV尺寸顺序是(width, height)
+          0, 0, cv::INTER_NEAREST); // 保持离散值的清晰度
+    cv::normalize(
+        scaled_density,  // 直接使用OpenCV矩阵
+        density_img,
+        0, 255,
+        cv::NORM_MINMAX,
+        CV_8UC1  // 确保输出为8位无符号单通道 [!code focus]
+    );
 
-//     // 应用伪彩色时需要转换为3通道
-//     cv::applyColorMap(density_img, density_img, cv::COLORMAP_JET);
+    // 应用伪彩色时需要转换为3通道
+    cv::applyColorMap(density_img, density_img, cv::COLORMAP_JET);
 
-//     // 叠加时确保map_img也是彩色图
-//     if (map_img.channels() == 1) {
-//         cv::cvtColor(map_img, map_img, cv::COLOR_GRAY2BGR);
-//     }
+    // 叠加时确保map_img也是彩色图
+    if (map_img.channels() == 1) {
+        cv::cvtColor(map_img, map_img, cv::COLOR_GRAY2BGR);
+    }
 
-//     cv::addWeighted(map_img, 0.7, density_img, 0.3, 0, map_img);
+    cv::addWeighted(map_img, 0.7, density_img, 0.3, 0, map_img);
 
 // 显示图像
     cv::imshow("Path Visualization", map_img);
