@@ -1,0 +1,38 @@
+[
+{
+  "directory": "/home/caotl/MAPF_CBS/build",
+  "command": "/usr/bin/g++  -I/home/caotl/MAPF_CBS/include -isystem /usr/include/opencv4 -g -o CMakeFiles/CBS.dir/src/Maploader.cpp.o -c /home/caotl/MAPF_CBS/src/Maploader.cpp",
+  "file": "/home/caotl/MAPF_CBS/src/Maploader.cpp",
+  "output": "CMakeFiles/CBS.dir/src/Maploader.cpp.o"
+},
+{
+  "directory": "/home/caotl/MAPF_CBS/build",
+  "command": "/usr/bin/g++  -I/home/caotl/MAPF_CBS/include -isystem /usr/include/opencv4 -g -o CMakeFiles/CBS.dir/src/ScenarioLoader.cpp.o -c /home/caotl/MAPF_CBS/src/ScenarioLoader.cpp",
+  "file": "/home/caotl/MAPF_CBS/src/ScenarioLoader.cpp",
+  "output": "CMakeFiles/CBS.dir/src/ScenarioLoader.cpp.o"
+},
+{
+  "directory": "/home/caotl/MAPF_CBS/build",
+  "command": "/usr/bin/g++  -I/home/caotl/MAPF_CBS/include -isystem /usr/include/opencv4 -g -o CMakeFiles/CBS.dir/src/example.cpp.o -c /home/caotl/MAPF_CBS/src/example.cpp",
+  "file": "/home/caotl/MAPF_CBS/src/example.cpp",
+  "output": "CMakeFiles/CBS.dir/src/example.cpp.o"
+},
+{
+  "directory": "/home/caotl/MAPF_CBS/build",
+  "command": "/usr/bin/g++  -I/home/caotl/MAPF_CBS/include -isystem /usr/include/opencv4 -g -o CMakeFiles/CBS.dir/src/high_level.cpp.o -c /home/caotl/MAPF_CBS/src/high_level.cpp",
+  "file": "/home/caotl/MAPF_CBS/src/high_level.cpp",
+  "output": "CMakeFiles/CBS.dir/src/high_level.cpp.o"
+},
+{
+  "directory": "/home/caotl/MAPF_CBS/build",
+  "command": "/usr/bin/g++  -I/home/caotl/MAPF_CBS/include -isystem /usr/include/opencv4 -g -o CMakeFiles/CBS.dir/src/low_level.cpp.o -c /home/caotl/MAPF_CBS/src/low_level.cpp",
+  "file": "/home/caotl/MAPF_CBS/src/low_level.cpp",
+  "output": "CMakeFiles/CBS.dir/src/low_level.cpp.o"
+},
+{
+  "directory": "/home/caotl/MAPF_CBS/build",
+  "command": "/usr/bin/g++  -I/home/caotl/MAPF_CBS/include -isystem /usr/include/opencv4 -g -o CMakeFiles/CBS.dir/src/main.cpp.o -c /home/caotl/MAPF_CBS/src/main.cpp",
+  "file": "/home/caotl/MAPF_CBS/src/main.cpp",
+  "output": "CMakeFiles/CBS.dir/src/main.cpp.o"
+}
+]

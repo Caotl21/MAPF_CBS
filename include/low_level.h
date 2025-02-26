@@ -91,7 +91,7 @@ struct stage{
             double angle = acos(dot / (norm(dir)*norm(prev_dir)));   // 计算角度惩罚（单位：弧度）
             //if(angle > M_PI/2) {
                 // 惩罚系数（可调整）
-                const double PENALTY_WEIGHT = 3.0; 
+                const double PENALTY_WEIGHT = 1.0; 
                 return PENALTY_WEIGHT * (angle - M_PI/2);
             //}
             //return 0;

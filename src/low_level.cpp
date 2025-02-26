@@ -136,7 +136,7 @@ void explore(std::vector<int> stnow, int dx, int dy,
 
     // 计算移动代价
     double cost = (dx != 0 && dy != 0) ? std::sqrt(2) : 1;
-            //     + 0.5 *ml.getDensity(stnew[0], stnew[1]);
+                 + 0.5 *ml.getDensity(stnew[0], stnew[1]);
     double new_g = hs[stnow].g + cost;
 
     // 在hs中查找stnew
@@ -163,6 +163,7 @@ void explore(std::vector<int> stnow, int dx, int dy,
         double w = dynamic_weight(stnew, st0, ed0);
         newst.geth(ed0, w);             // 计算启发式代价 h
         newst.g = hs[stnow].g + cost + penalty; // 设置实际代价 g
+        //newst.g = hs[stnow].g + cost;
         newst.open = 1;              // 标记为在开放列表中
         newst.parent = stnow;        // 设置父节点
         newst.dir = current_dir;     // 记录当前移动方向
@@ -225,9 +226,12 @@ int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<
     open_list.push(st.post);
     hs[st.post].open = 1;
 
-     // 定义八方向的移动增量
-     int dx[] = {0, 1, 0, -1, 1, 1, -1, -1};
-     int dy[] = {1, 0, -1, 0, 1, -1, 1, -1};
+    // 定义八方向的移动增量
+    int dx[] = {0, 1, 0, -1, 1, 1, -1, -1};
+    int dy[] = {1, 0, -1, 0, 1, -1, 1, -1};
+
+    int dx_jump[] = {0, 2, 0, -2, 2, 2, -2, -2};
+    int dy_jump[] = {2, 0, -2, 0, 2, -2, 2, -2};
 
     //定义当前已经走过的路径
     vector<vector<int > > pathnow;
@@ -246,13 +250,41 @@ int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<
         }
         if(hs[stnow].open==1)
         {
-            // 向八个方向探索
-            for (int i = 0; i < 8; ++i) 
-            {
-                if (ifvalid(stnow, dx[i], dy[i], ct_point3s_set, ct_edge6s_set, ml))
-                    //explore(stnow, dx[i], dy[i], open_list, edstage, ed0);
-                    explore(stnow, dx[i], dy[i], open_list, edstage, ed0, st0);
+            double current_density = ml.getDensity(stnow[0],stnow[1]);
+            //低密度区
+            if(current_density < 0.2){
+             // 向八个方向探索
+               for (int i = 0; i < 8; ++i) {
+                    // 检查跳步中途是否有障碍物
+                    if (ifvalid(stnow, dx[i], dy[i], ct_point3s_set, ct_edge6s_set, ml)){
+                        if (ifvalid(stnow, dx_jump[i], dy_jump[i], ct_point3s_set, ct_edge6s_set, ml)){
+                            explore(stnow, dx_jump[i], dy_jump[i], open_list, edstage, ed0, st0);
+                        }
+                        explore(stnow, dx[i], dy[i], open_list, edstage, ed0, st0);
+                    }
+                    
+                }
             }
+            //高密度区
+            else if(current_density > 0.7){
+                // 向八个方向探索
+               for (int i = 0; i < 8; ++i) {
+                    if (ifvalid(stnow, dx[i], dy[i], ct_point3s_set, ct_edge6s_set, ml)){
+                        explore(stnow, dx[i], dy[i], open_list, edstage, ed0, st0);
+                    }
+                }
+            }
+            //中密度区
+            else{
+                // 向八个方向探索
+               for (int i = 0; i < 8; ++i) {
+                if (ifvalid(stnow, dx[i], dy[i], ct_point3s_set, ct_edge6s_set, ml)){
+                    explore(stnow, dx[i], dy[i], open_list, edstage, ed0, st0);
+                }
+            }
+            }
+           
+           
         }
         hs[stnow].open = -1;
 
@@ -380,7 +412,7 @@ void visualize_path(const MapLoader& ml,
 
 // 绘制路径点
         for(const auto& pt : path_points) {
-            cv::circle(map_img, pt, 3, cv::Scalar(255,0,0), -1); // 蓝色点
+            cv::circle(map_img, pt, 5, cv::Scalar(255,0,0), -1); // 蓝色点
         }
     }
 

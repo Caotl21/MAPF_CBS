@@ -6,5 +6,5 @@ CXX_DEFINES =
 
 CXX_INCLUDES = -I/home/caotl/MAPF_CBS/include -isystem /usr/include/opencv4
 
-CXX_FLAGS = 
+CXX_FLAGS = -g
 
