@@ -145,8 +145,8 @@ void explore(std::vector<int> stnow, int dx, int dy, int density_level,
     // 计算移动代价
     double cost = (dx != 0 && dy != 0) ? std::sqrt(2) : 1;
     double densitydata = ml.getDensity(stnew[1], stnew[0]);
-    double densityalpha = 1 / (1 + exp(20*(densitydata - 0.35)));
-    double Density_penalty = 0.5 * densitydata;
+    double densityalpha = 1 / (1 + exp(20*(densitydata - 0.075)));
+    double Density_penalty = 5 * densitydata;
             
     
     // 在hs中查找stnew
@@ -176,10 +176,10 @@ void explore(std::vector<int> stnow, int dx, int dy, int density_level,
         //分层搜索策略对应不同的代价
         switch(density_level){
             case 0 :
-                newst.g = newst.g = hs[stnow].g + cost + turn_penalty + Density_penalty;
+                newst.g = newst.g = hs[stnow].g + cost + 5 * turn_penalty + Density_penalty;
                 break;
             case 1 :
-                newst.g = hs[stnow].g + cost + (densityalpha * turn_penalty) + Density_penalty;
+                newst.g = hs[stnow].g + cost + (5 * densityalpha * turn_penalty) + Density_penalty;
                 break;
             case 2 :
                 newst.g = hs[stnow].g + cost;
@@ -297,7 +297,7 @@ int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<
                 }
             }
             //高密度区
-            else if(current_density > 0.7){
+            else if(current_density > 0.15){
                 // 向八个方向探索
                for (int i = 0; i < 8; ++i) {
                     if (ifvalid(stnow, dx[i], dy[i], ct_point3s_set, ct_edge6s_set, ml)){

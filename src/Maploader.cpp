@@ -98,7 +98,7 @@ void MapLoader::saveDensity2File(const std::string& filename) const{
         throw std::runtime_error("Failed to open file: " + filename);
     }
     
-    outFile << std::fixed << std::setprecision(4); // 设置小数点后四位
+    outFile << std::fixed << std::setprecision(3); // 设置小数点后四位
     
     for (int i = 0; i < density_map.rows; ++i) {
         for (int j = 0; j < density_map.cols; ++j) {
