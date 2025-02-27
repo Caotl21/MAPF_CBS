@@ -3,6 +3,8 @@
 
 #include <bits/stdc++.h>
 #include <opencv2/opencv.hpp>
+#include <fstream> 
+#include <iomanip>
 
 class MapLoader {
     public:
@@ -15,6 +17,7 @@ class MapLoader {
         const cv::Mat& getDensityMap() const;
         void computeDensity();
         double getDensity(int x, int y) const;
+        void saveDensity2File(const std::string& filename) const;
     private:
         int height, width;
         std::string filename;

@@ -7,6 +7,7 @@
 #include <functional>
 #include <vector>
 #include <cstddef> // 包含size_t定义
+#include <opencv2/imgproc.hpp>
 
 
 struct agent
@@ -89,12 +90,22 @@ struct stage{
         double turn_penalty(const std::pair<int,int>& prev_dir) const {
             if(prev_dir == std::make_pair(0,0)) return 0; // 初始方向无惩罚
             int dot = dir.first*prev_dir.first + dir.second*prev_dir.second;  // 计算方向向量点积
-            double angle = acos(dot / (norm(dir)*norm(prev_dir)));   // 计算角度惩罚（单位：弧度）
-            //if(angle > M_PI/2) {
+            double angle = acos(dot / (norm(dir)*norm(prev_dir) + 1e-6));   // 计算角度惩罚（单位：弧度）
+            if(angle > M_PI/2) {
                 // 惩罚系数（可调整）
-                const double PENALTY_WEIGHT = 1.0; 
-                return PENALTY_WEIGHT * (angle);
-            //}
+                const double PENALTY_WEIGHT = 15.0; 
+                return PENALTY_WEIGHT * (cos(angle));
+            }
+            // else if(angle = M_PI/2) {
+            //     // 惩罚系数（可调整）
+            //     const double PENALTY_WEIGHT = 6.0; 
+            //     return PENALTY_WEIGHT * (cos(angle));
+            // }
+            else {
+                // 惩罚系数（可调整）
+                const double PENALTY_WEIGHT = 3.0; 
+                return PENALTY_WEIGHT * (cos(angle));
+            }
             //return 0;
         }
 
@@ -131,7 +142,7 @@ bool ifvalid(const std::vector<int>& stnow, int dx, int dy,
 //void explore(std::vector<int> stnow, int dx, int dy,std::priority_queue<vector<int>, std::vector<vector<int>>, stacmp>& open_list,std::vector<int>& edstage, std::vector<int> ed0,std::unordered_map<std::pair<int, int>, std::map<int, double>, pair_hash>& dominance_map,int& pruned_nodes, int& total_nodes)
 //int sta(agent* as,int i,std::vector<std::vector<int> > ct_point3s,std::vector<std::vector<int > > ct_edge6s,std::vector<std::vector<int > >& pths);
 
-void explore(std::vector<int> stnow, int dx, int dy,
+void explore(std::vector<int> stnow, int dx, int dy, int density_level,
     std::priority_queue<std::vector<int>, std::vector<std::vector<int>>, stacmp>& open_list,
     std::vector<int>& edstage, std::vector<int> ed0, std::vector<int> st0);
 
@@ -139,6 +150,7 @@ int sta(agent* as, int i,
     std::vector<std::vector<int>> ct_point3s,
     std::vector<std::vector<int>> ct_edge6s,
     std::vector<std::vector<int>>& pths);
+    //std::vector<std::vector<int>>& pths_smooth);
 
 
 extern std::unordered_map<std::vector<int >,stage,Hashfunc,Equalfunc> hs;
@@ -150,8 +162,108 @@ double calculatePathCost(const std::vector<std::vector<int>>& path);
 
 void visualize_path(const MapLoader& ml, 
     const std::vector<std::vector<int>>& path,
+    //const std::vector<std::vector<int>>& path_smooth,
     const agent& agent,
     const std::unordered_map<std::vector<int>, stage, Hashfunc, Equalfunc>& hs,
     int scale=30);
+
+// class PathSmoother {
+// public:
+//     // Bézier曲线平滑
+//     static std::vector<std::vector<int>> bezierSmooth(const std::vector<std::vector<int>>& path, 
+//                                                      const MapLoader& ml,
+//                                                      int iterations = 3,
+//                                                      int sample_points = 20) {
+//         if (path.size() < 3) return path; // 过短路径不处理
+
+//         // 转换到OpenCV点格式
+//         std::vector<cv::Point> points;
+//         for (const auto& p : path) {
+//             points.emplace_back(p[1], p[0]); // 转换为(x,y)即(col,row)
+//         }
+
+//         // 多次迭代平滑
+//         for (int i = 0; i < iterations; ++i) {
+//             points = computeControlPoints(points, ml);
+//         }
+
+//         // 生成Bézier曲线
+//         std::vector<cv::Point> curve = generateBezier(points, sample_points);
+
+//         // 转换回路径格式
+//         std::vector<std::vector<int>> smoothed;
+//         for (const auto& p : curve) {
+//             if (isCollisionFree(p.y, p.x, ml)) { // y是row，x是col
+//                 smoothed.push_back({p.y, p.x, 0}); // 时间维度暂置0
+//             }
+//         }
+//         return smoothed;
+//     }
+
+// private:
+//     // 碰撞检测
+//     static bool isCollisionFree(int row, int col, const MapLoader& ml) {
+//         if (row < 0 || row >= ml.getHeight() || col < 0 || col >= ml.getWidth()) 
+//             return false;
+//         return ml.getMapData(row, col) == 0;
+//     }
+
+//     // 生成控制点
+//     static std::vector<cv::Point> computeControlPoints(const std::vector<cv::Point>& points,
+//                                                       const MapLoader& ml) {
+//         std::vector<cv::Point> control;
+//         control.push_back(points.front());
+
+//         // 自动选择关键转折点
+//         for (size_t i = 1; i < points.size()-1; ++i) {
+//             cv::Point prev = points[i-1];
+//             cv::Point curr = points[i];
+//             cv::Point next = points[i+1];
+            
+//             // 计算方向变化
+//             double angle = std::abs(atan2(next.y - curr.y, next.x - curr.x) - 
+//                                   atan2(curr.y - prev.y, curr.x - prev.x));
+            
+//             if (angle > CV_PI/6) { // 方向变化超过30度保留为控制点
+//                 control.push_back(curr);
+//             }
+//         }
+//         control.push_back(points.back());
+//         return control;
+//     }
+
+//     // 生成Bézier曲线
+//     static std::vector<cv::Point> generateBezier(const std::vector<cv::Point>& control,
+//                                                 int samples) {
+//         std::vector<cv::Point> curve;
+//         const int n = control.size()-1;
+        
+//         for (int i = 0; i <= samples; ++i) {
+//             double t = (double)i / samples;
+//             cv::Point p(0, 0);
+            
+//             for (int j = 0; j <= n; ++j) {
+//                 double blend = bernstein(n, j, t);
+//                 p.x += control[j].x * blend;
+//                 p.y += control[j].y * blend;
+//             }
+//             curve.push_back(p);
+//         }
+//         return curve;
+//     }
+
+//     // Bernstein基函数
+//     static double bernstein(int n, int k, double t) {
+//         return binomial(n, k) * pow(t, k) * pow(1-t, n-k);
+//     }
+
+//     // 二项式系数
+//     static double binomial(int n, int k) {
+//         if (k < 0 || k > n) return 0;
+//         if (k == 0 || k == n) return 1;
+//         return binomial(n-1, k-1) + binomial(n-1, k);
+//     }
+// };
+
 
 #endif 

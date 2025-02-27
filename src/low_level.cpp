@@ -20,11 +20,6 @@ void agent::set(int stx,int sty,int edx,int edy)
 
 agent* as; 
 
-// 启发式代价h  曼哈顿距离
-//void stage::geth(vector<int > ed){
-//       h = abs(post[0]-ed[0])+abs(post[1]-ed[1]);
-//}
-
 // 计算启发式代价 h（切比雪夫距离）
 void stage::geth(vector<int> ed, double w) {
     int dx = abs(post[0] - ed[0]);
@@ -116,8 +111,21 @@ bool ifvalid(const std::vector<int>& stnow, int dx, int dy,
     return true;
 }
 
+// 判断跳部合法性
+bool ifsparse(const std::vector<int>& stnow, int dx, int dy,
+    const MapLoader& ml)
+{
+    double predict_denstiy = ml.getDensity(stnow[1]+dx, stnow[0]+dy);
+    if(predict_denstiy != 0){
+        return false;
+    }
+
+    return true;
+
+} 
+
 // 节点拓展
-void explore(std::vector<int> stnow, int dx, int dy,
+void explore(std::vector<int> stnow, int dx, int dy, int density_level,
     std::priority_queue<std::vector<int>, std::vector<std::vector<int>>, stacmp>& open_list,
     std::vector<int>& edstage, std::vector<int> ed0, std::vector<int> st0)
 {
@@ -135,10 +143,12 @@ void explore(std::vector<int> stnow, int dx, int dy,
     }
 
     // 计算移动代价
-    int cost = (dx != 0 && dy != 0) ? std::sqrt(2) : 1;
-                 + 0.5 *ml.getDensity(stnew[1], stnew[0]);
-    //new_g = hs[stnow].g + cost;
-
+    double cost = (dx != 0 && dy != 0) ? std::sqrt(2) : 1;
+    double densitydata = ml.getDensity(stnew[1], stnew[0]);
+    double densityalpha = 1 / (1 + exp(20*(densitydata - 0.35)));
+    double Density_penalty = 0.5 * densitydata;
+            
+    
     // 在hs中查找stnew
     auto it = hs.find(stnew);
     // 如果位于hs中
@@ -158,12 +168,24 @@ void explore(std::vector<int> stnow, int dx, int dy,
     else
     {
         stage newst;
-        double penalty = newst.turn_penalty(parent_dir);
+        double turn_penalty = newst.turn_penalty(parent_dir);
         newst.post = stnew;          // 设置新状态的坐标
         double w = dynamic_weight(stnew, st0, ed0);
         newst.geth(ed0, w);             // 计算启发式代价 h
-        newst.g = hs[stnow].g + cost + penalty; // 设置实际代价 g
-        //newst.g = hs[stnow].g + cost;
+
+        //分层搜索策略对应不同的代价
+        switch(density_level){
+            case 0 :
+                newst.g = newst.g = hs[stnow].g + cost + turn_penalty + Density_penalty;
+                break;
+            case 1 :
+                newst.g = hs[stnow].g + cost + (densityalpha * turn_penalty) + Density_penalty;
+                break;
+            case 2 :
+                newst.g = hs[stnow].g + cost;
+                break;
+        }
+
         newst.open = 1;              // 标记为在开放列表中
         newst.parent = stnow;        // 设置父节点
         newst.dir = current_dir;     // 记录当前移动方向
@@ -256,24 +278,30 @@ int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<
                for (int i = 0; i < 8; ++i) {
                     // 检查跳步中途是否有障碍物
                     if (ifvalid(stnow, dx[i], dy[i], ct_point3s_set, ct_edge6s_set, ml)){
-                        if (ifvalid(stnow, dx_jump2[i], dy_jump2[i], ct_point3s_set, ct_edge6s_set, ml)){
-                            //
-                            if (ifvalid(stnow, dx_jump3[i], dy_jump3[i], ct_point3s_set, ct_edge6s_set, ml)){
-                                explore(stnow, dx_jump3[i], dy_jump3[i], open_list, edstage, ed0, st0);
+                        if (ifvalid(stnow, dx_jump2[i], dy_jump2[i], ct_point3s_set, ct_edge6s_set, ml)
+                            && ifsparse(stnow, dx_jump2[i], dy_jump2[i], ml))
+                        {
+                            if (ifvalid(stnow, dx_jump3[i], dy_jump3[i], ct_point3s_set, ct_edge6s_set, ml)
+                                && ifsparse(stnow, dx_jump3[i], dy_jump3[i], ml))
+                            {
+                                explore(stnow, dx_jump3[i], dy_jump3[i], 0, open_list, edstage, ed0, st0);
                             }
-                            explore(stnow, dx_jump2[i], dy_jump2[i], open_list, edstage, ed0, st0);
+                            else{
+                                explore(stnow, dx_jump2[i], dy_jump2[i], 0, open_list, edstage, ed0, st0);
+                            }
                         }
-                        explore(stnow, dx[i], dy[i], open_list, edstage, ed0, st0);
+                        else{
+                            explore(stnow, dx[i], dy[i], 0, open_list, edstage, ed0, st0);
+                        }
                     }
-                    
                 }
             }
             //高密度区
-            else if(current_density > 0.6){
+            else if(current_density > 0.7){
                 // 向八个方向探索
                for (int i = 0; i < 8; ++i) {
                     if (ifvalid(stnow, dx[i], dy[i], ct_point3s_set, ct_edge6s_set, ml)){
-                        explore(stnow, dx[i], dy[i], open_list, edstage, ed0, st0);
+                        explore(stnow, dx[i], dy[i], 2, open_list, edstage, ed0, st0);
                     }
                 }
             }
@@ -282,7 +310,7 @@ int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<
                 // 向八个方向探索
                for (int i = 0; i < 8; ++i) {
                 if (ifvalid(stnow, dx[i], dy[i], ct_point3s_set, ct_edge6s_set, ml)){
-                    explore(stnow, dx[i], dy[i], open_list, edstage, ed0, st0);
+                    explore(stnow, dx[i], dy[i], 1, open_list, edstage, ed0, st0);
                 }
             }
             }
@@ -302,8 +330,9 @@ int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<
             {
                 itter = hs[itter].parent;
                 pathnow.push_back(itter);
-                pths = pathnow;
             }
+            pths = pathnow;
+            //pths_smooth = PathSmoother::bezierSmooth(pathnow, ml);
             break;
         }
     }
@@ -382,6 +411,7 @@ return visited;
 //可视化处理
 void visualize_path(const MapLoader& ml, 
     const std::vector<std::vector<int>>& path,
+    //const std::vector<std::vector<int>>& path_smooth,
     const agent& agent,
     const std::unordered_map<std::vector<int>, stage, Hashfunc, Equalfunc>& hs,
     int scale) 
@@ -447,14 +477,38 @@ void visualize_path(const MapLoader& ml,
             path_points.emplace_back(x, y);
         }
 
-// 绘制连线
+    // 绘制连线
         for(size_t i=1; i<path_points.size(); ++i) {
             cv::line(map_img, 
                     path_points[i-1], 
                     path_points[i],
-                    cv::Scalar(255,0,0), // 红色
+                    cv::Scalar(255,0,0), 
                     3);
         }
+
+    // 生成并绘制平滑路径（绿色实线）
+    //auto smooth_path = PathSmoother::bezierSmooth(path_smooth, ml);
+    // if(!path_smooth.empty()) {
+    //     vector<cv::Point> smooth_points;
+    //     for(const auto& p : path_smooth) {
+    //         // 注意平滑路径可能没有时间维度
+    //         int x = (p.size() >= 2) ? p[1] * scale + scale/2 : 0;
+    //         int y = (p.size() >= 1) ? p[0] * scale + scale/2 : 0;
+    //         smooth_points.emplace_back(x, y);
+    //     }
+        
+    //     // 绘制带箭头的路径
+    //     for(size_t i = 1; i < smooth_points.size(); ++i) {
+    //         cv::arrowedLine(map_img, 
+    //                        smooth_points[i-1], 
+    //                        smooth_points[i],
+    //                        cv::Scalar(0, 255, 0), // 绿色
+    //                        2,                     // 线宽
+    //                        cv::LINE_AA,
+    //                        0,                     // 无偏移
+    //                        0.1);                  // 箭头尖端比例
+    //     }
+    // }
 
 // 绘制路径点
         for(const auto& pt : path_points) {
@@ -470,11 +524,13 @@ void visualize_path(const MapLoader& ml,
 
 // 添加图例
     cv::putText(map_img, "Start", start + cv::Point(10,-10), 
-    cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,255,0));
+               cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,255,0));
     cv::putText(map_img, "Goal", end + cv::Point(10,-10), 
-    cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,165,255));
-    cv::putText(map_img, "Path", cv::Point(10,20), 
-    cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,0,255));
+               cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,165,255));
+    cv::putText(map_img, "Raw Path", cv::Point(10, 20), 
+               cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(225, 0, 0));
+    cv::putText(map_img, "Density", cv::Point(10, 60), 
+               cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255));
 
 // 绘制障碍物密度图
     cv::Mat density_img;

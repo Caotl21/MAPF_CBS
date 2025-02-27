@@ -63,13 +63,14 @@ int main() {
     vector<vector<int>> empty_ct_edges;
     // 路径存储容器
     vector<vector<int>> final_path;
-
+    
     // 执行A*算法测试
     auto start = high_resolution_clock::now();
     sta(&test_agent, 0, empty_ct_points, empty_ct_edges, final_path);
     auto end = high_resolution_clock::now();
 
     double total_cost = calculatePathCost(final_path);
+    size_t size = hs.size();
     
     //结果分析
     if(total_cost == -1) {
@@ -83,6 +84,7 @@ int main() {
     cout << "Agent Goal:  (" << test_agent.ed[0] << ", " << test_agent.ed[1] << ")\n";
     cout << "Total Cost: " << total_cost << " timesteps\n";
     cout << "Path Length: " << final_path.size() << " steps\n";
+    cout << "Explore node num: " << size << "\n";
     cout << "Computation Time: " 
          << duration_cast<microseconds>(end - start).count() 
          << " 微秒\n";

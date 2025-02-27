@@ -18,6 +18,7 @@ void node::set(agent* as)
     phs = vector<vector<vector<int >>> (num_agent);
     //临时存储路径
     vector<vector<int > > ph;
+    //vector<vector<int > > ph_s;
     //为每个agent调用STA*
     for(int i=0;i<num_agent;++i)
     {
@@ -155,6 +156,7 @@ void split(node root,vector<int > ct_now,priority_queue<node,vector<node >, ndcm
         vector<int > ct_point3;
         ct_point3.assign(ct_now.begin()+2,ct_now.end());
         vector<vector<int > > myph;
+        //vector<vector<int > > myph_s;
 
         newnode1.cts_point[i].push_back(ct_point3);
         sta(as,i,newnode1.cts_point[i],newnode1.cts_edge[i],myph);
@@ -174,6 +176,7 @@ void split(node root,vector<int > ct_now,priority_queue<node,vector<node >, ndcm
     vector<int > ct_edge6i,ct_edge6j;
     ct_edge6i.assign(ct_now.begin()+2,ct_now.end());
     vector<vector<int > > myph;
+    //vector<vector<int > > myph_s;
 
     newnode1.cts_edge[i].push_back(ct_edge6i);
     sta(as,i,newnode1.cts_point[i],newnode1.cts_edge[i],myph);
@@ -219,6 +222,7 @@ vector<int > get_ct_point5(vector<vector<int > > cts_pointbig,node nnow,bool pc)
                 vector<vector<int > > new_constraints = nnow.cts_point[cts_pointbig[i][j]];
                 new_constraints.push_back(constraint);
                 vector<vector<int > > pths;
+                //vector<vector<int > > pths_s;
                 int newres = sta(as,cts_pointbig[i][j],new_constraints,nnow.cts_edge[cts_pointbig[i][j]],pths); 
                 if(newres>nnow.phs[cts_pointbig[i][j]].size()-1)    cardinal_agents.push_back(cts_pointbig[i][j]);
                 else notcardinal_agents.push_back(cts_pointbig[i][j]);

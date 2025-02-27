@@ -1,6 +1,8 @@
 #include "MapLoader.h"
 #include <bits/stdc++.h>
 #include <opencv2/opencv.hpp>
+#include <fstream>  
+#include <iomanip>
 
 using namespace std;
 
@@ -27,6 +29,8 @@ void MapLoader::loadMap(const string& filename) {
         }
     }
     computeDensity();
+    saveDensity2File("density.txt");
+
 }
 int MapLoader::getHeight() const {
     return height;
@@ -82,6 +86,31 @@ void MapLoader::computeDensity() {
 const cv::Mat& MapLoader::getDensityMap() const {  // [!code focus]
     assert(!density_map.empty() && "Density map not initialized!");
     return density_map;
+}
+
+void MapLoader::saveDensity2File(const std::string& filename) const{
+    if (density_map.empty()) {
+        throw std::runtime_error("Density map is empty. Call computeDensity() first.");
+    }
+    
+    std::ofstream outFile(filename);
+    if (!outFile.is_open()) {
+        throw std::runtime_error("Failed to open file: " + filename);
+    }
+    
+    outFile << std::fixed << std::setprecision(4); // 设置小数点后四位
+    
+    for (int i = 0; i < density_map.rows; ++i) {
+        for (int j = 0; j < density_map.cols; ++j) {
+            outFile << density_map.at<double>(i, j);
+            if (j < density_map.cols - 1) {
+                outFile << " "; // 用空格分隔数值
+            }
+        }
+        outFile << "\n"; // 每行末尾换行
+    }
+    
+    outFile.close();
 }
 
 MapLoader ml;
