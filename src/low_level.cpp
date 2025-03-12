@@ -27,8 +27,6 @@ void stage::geth(vector<int> ed, double w) {
     h = w * max(dx, dy); // 切比雪夫距离
 }
 
-
-
 // 动态权重计算函数
 double dynamic_weight(const vector<int>& current, const vector<int>& start, 
     const vector<int>& goal) {
@@ -37,12 +35,6 @@ double dynamic_weight(const vector<int>& current, const vector<int>& start,
     // 动态权重曲线：初始阶段权重高，后期逐渐降低: sigmoid 
     return 1.5 - 0.5 * (1.0 / (1.0 + exp(-10*(progress-0.7))));
 }
-
-// 打印节点状态
-// void stage::ptf()
-// {
-//     printf("post is %d %d %d, g is %d, h is %d\n",post[0],post[1],post[2],g,h);
-// }
 
 // 自定义哈希函数，用于将 vector<int> 作为键存入 unordered_map
 size_t Hashfunc::operator() (const vector<int>& key) const{
@@ -62,6 +54,130 @@ bool stacmp::operator()(const vector<int>& a,const vector<int >& b) const
     return (hs[a].g+hs[a].h)>(hs[b].g+hs[b].h);
 }
 
+                         
+// //判断跳步过程中是否有边冲突
+// bool check_jump_edges(const vector<int>& stnow, int dx, int dy, 
+//     const unordered_set<Edge5D>& ct_edge6s_set) {
+//     int steps = max(abs(dx), abs(dy));
+//     int x1 = stnow[0], y1 = stnow[1], t1 = stnow[2];
+//     int x2 = x1 + dx, y2 = y1 + dy, t2 = t1 + steps;
+
+//     for (int step = 1; step <= steps; ++step) {
+//         int x_intermediate = x1 + (dx * step) / steps;
+//         int y_intermediate = y1 + (dy * step) / steps;
+//         int t_intermediate = t1 + step;
+
+//         Edge5D edge{x1, y1, t_intermediate - 1, x_intermediate, y_intermediate};
+//         if (ct_edge6s_set.find(edge) != ct_edge6s_set.end()) {
+//             return false;  // 边冲突
+//         }
+
+//         x1 = x_intermediate;
+//         y1 = y_intermediate;
+//         t1 = t_intermediate;
+//     }
+//     return true;
+// }
+
+// //判断跳步过程中是否有点冲突
+// bool check_jump_points(const vector<int>& stnow, int dx, int dy, 
+//     const unordered_set<Point3D>& ct_point3s_set) {
+//     int steps = max(abs(dx), abs(dy));
+//     int x1 = stnow[0], y1 = stnow[1], t1 = stnow[2];
+//     int x2 = x1 + dx, y2 = y1 + dy, t2 = t1 + steps;
+
+//     for (int step = 1; step <= steps; ++step) {
+//         int x_intermediate = x1 + (dx * step) / steps;
+//         int y_intermediate = y1 + (dy * step) / steps;
+//         int t_intermediate = t1 + step;
+
+//         Point3D intermediate_point{x_intermediate, y_intermediate, t_intermediate};
+//         if (ct_point3s_set.find(intermediate_point) != ct_point3s_set.end()) {
+//             return false;  // 点冲突
+//         }
+//     }
+//     return true;
+// }
+
+int get_jump_distance(double density) {
+    if (density == 0) return 3;  // 稀疏区域，跳步距离为 3
+    else return 1;               // 稠密区域，禁用跳步
+}
+
+bool check_jump_path(const std::vector<int>& stnow, vector<int> ed, int dx, int dy,
+    const std::unordered_set<Point3D>& ct_point3s_set,
+    const std::unordered_set<Edge5D>& ct_edge6s_set,
+    const MapLoader& ml) 
+{
+    int steps = std::max(abs(dx), abs(dy));
+    int x1 = stnow[0], y1 = stnow[1], t1 = stnow[2];
+    int x2 = x1 + dx, y2 = y1 + dy, t2 = t1 + steps;
+    
+    if((abs(stnow[0]-ed[0]) < 5) && (abs(stnow[1]-ed[1]) < 5)){
+        return false;
+    }
+
+    if(ml.getDensity(y2, x2) > 0.4){
+        return false;
+    }
+
+    for (int step = 1; step <= steps; ++step) {
+        int x_intermediate = x1 + (dx * step) / steps;
+        int y_intermediate = y1 + (dy * step) / steps;
+        int t_intermediate = t1 + step;
+
+        // 检查中间节点是否合法
+        Point3D intermediate_point{x_intermediate, y_intermediate, t_intermediate};
+        if (ct_point3s_set.find(intermediate_point) != ct_point3s_set.end()) {
+            return false;  // 点冲突
+        }
+
+        // 检查中间边是否合法
+        Edge5D edge{x1, y1, t_intermediate - 1, x_intermediate, y_intermediate};
+        if (ct_edge6s_set.find(edge) != ct_edge6s_set.end()) {
+            return false;  // 边冲突
+        }
+
+        // 检查中间节点是否在地图范围内且无障碍物
+        if (!((x_intermediate < ml.getHeight()) && (x_intermediate >= 0) &&
+            (y_intermediate < ml.getWidth()) && (y_intermediate >= 0))) {
+            return false;
+        }
+        int map_data = ml.getMapData(x_intermediate, y_intermediate);
+        if (map_data == -1) {
+            return false;  // 静态障碍物
+        } else if (map_data > 0) {
+            // 动态障碍物检查：如果新位置的时间步大于等于动态障碍物的时间步，则冲突
+            if (t_intermediate >= map_data) {
+                return false;
+            }
+        }
+        if (dx != 0 && dy != 0) {      
+            int xside1 = stnow[0] + (step * dx) / steps;
+            int yside1 = stnow[1] + ((step - 1) * dy) / steps;
+            int xside2 = stnow[0] + ((step - 1) * dx) / steps;
+            int yside2 = stnow[1] + (step * dy) / steps;
+            if (ml.getMapData(xside1, yside1) == -1 || ml.getMapData(xside2, yside2) == -1) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+//跳点搜索的节点扩展
+void explore_with_jump(std::vector<int> stnow, int dx, int dy, int jump_distance,
+    std::priority_queue<std::vector<int>, std::vector<std::vector<int>>, stacmp>& open_list,
+    std::vector<int>& edstage, std::vector<int> ed0, std::vector<int> st0,
+    const std::unordered_set<Point3D>& ct_point3s_set,
+    const std::unordered_set<Edge5D>& ct_edge6s_set,
+    const MapLoader& ml) 
+{
+    //if (check_jump_path(stnow, dx * jump_distance, dy * jump_distance, ct_point3s_set, ct_edge6s_set, ml)) {
+        explore(stnow, dx * jump_distance, dy * jump_distance, 0, open_list, edstage, ed0, st0);
+    //}
+}
+
 // 使用哈希表加速冲突检测
 //bool ifvalid(const std::vector<int>& stnow, int dx, int dy, const std::unordered_set<std::vector<int>, Hashfunc, Equalfunc>& ct_point3s_set, const std::vector<std::vector<int>>& ct_edge6s)
 bool ifvalid(const std::vector<int>& stnow, int dx, int dy,
@@ -69,6 +185,7 @@ bool ifvalid(const std::vector<int>& stnow, int dx, int dy,
     const std::unordered_set<Edge5D>& ct_edge6s_set,
     const MapLoader& ml) 
 {
+    int steps = std::max(abs(dx), abs(dy));
     int xnew = stnow[0] + dx;
     int ynew = stnow[1] + dy;
     int tnew = stnow[2] + 1;
@@ -78,12 +195,13 @@ bool ifvalid(const std::vector<int>& stnow, int dx, int dy,
     if (ct_edge6s_set.find(current_edge) != ct_edge6s_set.end()) {
         return false;
     }
-
+    
     // 位置冲突o(1)
     Point3D current_point{xnew, ynew, tnew};
     if (ct_point3s_set.find(current_point) != ct_point3s_set.end()) {
         return false;
     }
+
     // 检查新位置是否在地图范围内
     if (!((xnew<ml.getHeight())&&(ynew<ml.getWidth())&&(xnew>=0)&&(ynew>=0))) return false;
     // 检查新位置是否有障碍物
@@ -96,33 +214,19 @@ bool ifvalid(const std::vector<int>& stnow, int dx, int dy,
             return false;
         }
     }
-    // 检查斜向移动时是否经过障碍物的角落
-    if (dx != 0 && dy != 0) {      
-        int xside1 = stnow[0] + dx;
-        int yside1 = stnow[1];
-        int xside2 = stnow[0];
-        int yside2 = stnow[1] + dy;
-
-        if (ml.getMapData(xside1, yside1) == -1 || ml.getMapData(xside2, yside2) == -1) {
-            return false;
+    // 检查斜向移动时是否经过障碍物的角落：考虑跳步情况
+        if (dx != 0 && dy != 0) {      
+            int xside1 = stnow[0] + dx ;
+            int yside1 = stnow[1] ;
+            int xside2 = stnow[0] ;
+            int yside2 = stnow[1] + dy ;
+            if (ml.getMapData(xside1, yside1) == -1 || ml.getMapData(xside2, yside2) == -1) {
+                return false;
+            }
         }
-    }
     
     return true;
 }
-
-// 判断跳部合法性
-bool ifsparse(const std::vector<int>& stnow, int dx, int dy,
-    const MapLoader& ml)
-{
-    double predict_denstiy = ml.getDensity(stnow[1]+dx, stnow[0]+dy);
-    if(predict_denstiy != 0){
-        return false;
-    }
-
-    return true;
-
-} 
 
 // 节点拓展
 void explore(std::vector<int> stnow, int dx, int dy, int density_level,
@@ -132,7 +236,8 @@ void explore(std::vector<int> stnow, int dx, int dy, int density_level,
     vector<int > stnew;
     stnew.push_back(stnow[0]+dx);
     stnew.push_back(stnow[1]+dy);
-    stnew.push_back(stnow[2]+1);
+    const int steps = std::max(abs(dx),abs(dy));
+    stnew.push_back(stnow[2]+steps);
     // 计算当前移动方向
     pair<int,int> current_dir(dx, dy);
     
@@ -141,12 +246,11 @@ void explore(std::vector<int> stnow, int dx, int dy, int density_level,
     if(!stnow.empty() && hs.find(stnow) != hs.end()) {
         parent_dir = hs[stnow].dir;
     }
-
-    // 计算移动代价
-    double cost = (dx != 0 && dy != 0) ? std::sqrt(2) : 1;
+    
+    double cost = steps * ((dx != 0 && dy != 0) ? std::sqrt(2) : 1);
     double densitydata = ml.getDensity(stnew[1], stnew[0]);
     double densityalpha = 1 / (1 + exp(20*(densitydata - 0.075)));
-    double Density_penalty = 5 * densitydata;
+    double Density_penalty = 10 * densitydata;
             
     
     // 在hs中查找stnew
@@ -170,19 +274,19 @@ void explore(std::vector<int> stnow, int dx, int dy, int density_level,
         stage newst;
         double turn_penalty = newst.turn_penalty(parent_dir);
         newst.post = stnew;          // 设置新状态的坐标
-        double w = dynamic_weight(stnew, st0, ed0);
+        double w = dynamic_weight(stnew, st0, ed0); //5 * densitydata;
+        //double w = 1.0;
         newst.geth(ed0, w);             // 计算启发式代价 h
 
         //分层搜索策略对应不同的代价
         switch(density_level){
             case 0 :
-                newst.g = newst.g = hs[stnow].g + cost + 5 * turn_penalty + Density_penalty;
+                //newst.g = hs[stnow].g + cost + 10 * turn_penalty + Density_penalty;
+                newst.g = hs[stnow].g + cost;
                 break;
             case 1 :
-                newst.g = hs[stnow].g + cost + (5 * densityalpha * turn_penalty) + Density_penalty;
-                break;
-            case 2 :
                 newst.g = hs[stnow].g + cost;
+                //newst.g = hs[stnow].g + cost + (5 * densityalpha * turn_penalty) + densityalpha * Density_penalty;
                 break;
         }
 
@@ -199,7 +303,7 @@ void explore(std::vector<int> stnow, int dx, int dy, int density_level,
 
 // 主函数：Space-Time A*
 //int sta(agent* as,int i,vector<vector<int> > ct_point3s,vector<vector<int > > ct_edge6s,vector<vector<int > >& pths)
-int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<int > > ct_edge6s,vector<vector<int > >& pths)
+double sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<int > > ct_edge6s,vector<vector<int > >& pths)
 {
     ml.setMapData(as[i].ed[0],as[i].ed[1],0); // 设置终点在地图上的数据
     
@@ -230,7 +334,7 @@ int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<
 
     stage st;                     //定义起点
     vector<int > edstage;         //定义终点
-    int res = 0;
+    double res = 0;
 
     //对起点进行初始化
     st.post = st0;             
@@ -247,12 +351,6 @@ int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<
     // 定义八方向的移动增量
     int dx[] = {0, 1, 0, -1, 1, 1, -1, -1};
     int dy[] = {1, 0, -1, 0, 1, -1, 1, -1};
-
-    int dx_jump2[] = {0, 2, 0, -2, 2, 2, -2, -2};
-    int dy_jump2[] = {2, 0, -2, 0, 2, -2, 2, -2};
-
-    int dx_jump3[] = {0, 3, 0, -3, 3, 3, -3, -3};
-    int dy_jump3[] = {3, 0, -3, 0, 3, -3, 3, -3};
 
     //定义当前已经走过的路径
     vector<vector<int > > pathnow;
@@ -272,40 +370,41 @@ int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<
         if(hs[stnow].open==1)
         {
             double current_density = ml.getDensity(stnow[1],stnow[0]);
-            //低密度区
+            //稀疏区域
             if(current_density == 0){
-             // 向八个方向探索
-               for (int i = 0; i < 8; ++i) {
-                    // 检查跳步中途是否有障碍物
-                    if (ifvalid(stnow, dx[i], dy[i], ct_point3s_set, ct_edge6s_set, ml)){
-                        if (ifvalid(stnow, dx_jump2[i], dy_jump2[i], ct_point3s_set, ct_edge6s_set, ml)
-                            && ifsparse(stnow, dx_jump2[i], dy_jump2[i], ml))
-                        {
-                            if (ifvalid(stnow, dx_jump3[i], dy_jump3[i], ct_point3s_set, ct_edge6s_set, ml)
-                                && ifsparse(stnow, dx_jump3[i], dy_jump3[i], ml))
-                            {
-                                explore(stnow, dx_jump3[i], dy_jump3[i], 0, open_list, edstage, ed0, st0);
-                            }
-                            else{
-                                explore(stnow, dx_jump2[i], dy_jump2[i], 0, open_list, edstage, ed0, st0);
-                            }
+                int jump_distance = get_jump_distance(current_density);
+                bool jump_success = false;
+                
+                while (jump_distance >= 1 && !jump_success){
+                    for (int i = 0; i < 8; ++i){
+                        if(check_jump_path(stnow, ed0, dx[i]*jump_distance, dy[i]*jump_distance,
+                            ct_point3s_set, ct_edge6s_set, ml)){
+                                explore_with_jump(stnow, dx[i], dy[i], jump_distance, open_list, 
+                                    edstage, ed0, st0, ct_point3s_set, ct_edge6s_set, ml);
+                                jump_success = true;
                         }
-                        else{
+                    }
+                    if(!jump_success){
+                        jump_distance--;
+                    }
+                }
+
+                if (!jump_success){
+                    for (int i = 0; i < 8; ++i) {
+                        if (ifvalid(stnow, dx[i], dy[i], ct_point3s_set, ct_edge6s_set, ml)) {
                             explore(stnow, dx[i], dy[i], 0, open_list, edstage, ed0, st0);
                         }
                     }
                 }
+
+                // for (int i = 0; i < 8; ++i) {
+                //     if (ifvalid(stnow, dx[i], dy[i], ct_point3s_set, ct_edge6s_set, ml)){
+                //         explore(stnow, dx[i], dy[i], 0, open_list, edstage, ed0, st0);
+                //     }
+                // }
             }
-            //高密度区
-            else if(current_density > 0.15){
-                // 向八个方向探索
-               for (int i = 0; i < 8; ++i) {
-                    if (ifvalid(stnow, dx[i], dy[i], ct_point3s_set, ct_edge6s_set, ml)){
-                        explore(stnow, dx[i], dy[i], 2, open_list, edstage, ed0, st0);
-                    }
-                }
-            }
-            //中密度区
+    
+            //稠密区域
             else{
                 // 向八个方向探索
                for (int i = 0; i < 8; ++i) {
@@ -325,14 +424,35 @@ int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<
             res = hs[edstage].g;
             vector<int > itter=edstage;
             pathnow.push_back(itter);
-            //回溯路径
-            while(itter[2])
+            //回溯路径1
+            
+            //while(itter[2])
+            while (!(itter[0] == st0[0] && itter[1] == st0[1] && itter[2] == st0[2]))
             {
-                itter = hs[itter].parent;
+                std::vector<int> parent = hs[itter].parent;
+                
+                // //补全跳步中间的节点
+                // int dx_step = itter[0] - parent[0];
+                // int dy_step = itter[1] - parent[1];
+                // int time_steps = itter[2] - parent[2];
+
+                // vector<vector<int>> intermediates;
+                // for (int t = time_steps - 1; t >= 1; --t) {
+                //     int x = parent[0] + (dx_step * t) / time_steps;
+                //     int y = parent[1] + (dy_step * t) / time_steps;
+                //     int time = parent[2] + t;
+                //     intermediates.push_back({x, y, time});
+                // }
+
+                // for (const auto& node : intermediates) {
+                //     pathnow.push_back(node);
+                // }
+
+                itter = parent;
                 pathnow.push_back(itter);
             }
+            reverse(pathnow.begin(), pathnow.end());
             pths = pathnow;
-            //pths_smooth = PathSmoother::bezierSmooth(pathnow, ml);
             break;
         }
     }
@@ -344,6 +464,7 @@ int sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vector<
     //hs.clear();
 
 }
+
 
 // 路径成本计算函数
 double calculatePathCost(const std::vector<std::vector<int>>& path) {
@@ -364,26 +485,20 @@ double calculatePathCost(const std::vector<std::vector<int>>& path) {
 
         int dx = abs(curr[0] - prev[0]);
         int dy = abs(curr[1] - prev[1]);
-
+        
+        int steps = std::max(abs(dx), abs(dy));
         // 计算移动类型
-        if (dx == 1 && dy == 1) {
-            total_cost += sqrt(2); // 对角线移动
-        } else if ((dx == 1 && dy == 0) || (dx == 0 && dy == 1)) {
-            total_cost += 1.0; // 直线移动
-        } else if (dx == 2 && dy == 2) {
-            total_cost += 2*sqrt(2); // 对角线移动jump
-        } else if ((dx == 2 && dy == 0) || (dx == 0 && dy == 2)) {
-            total_cost += 2.0; // 直线移动jump
-        } else if (dx == 3 && dy == 3) {
-            total_cost += 3*sqrt(2); // 对角线移动jump
-        } else if ((dx == 3 && dy == 0) || (dx == 0 && dy == 3)) {
-            total_cost += 3.0; // 直线移动jump 
+        if (dx != 0 && dy != 0) {
+            total_cost += steps * sqrt(2); // 对角线移动
         } else {
-            // 异常移动处理
-            cerr << "Warning: Irregular movement from (" 
-                 << prev[0] << "," << prev[1] << ") to ("
-                 << curr[0] << "," << curr[1] << ")" << endl;
-        }
+            total_cost += steps * 1.0; // 直线移动
+        } 
+        // else {
+        //     // 异常移动处理
+        //     cerr << "Warning: Irregular movement from (" 
+        //          << prev[0] << "," << prev[1] << ") to ("
+        //          << curr[0] << "," << curr[1] << ")" << endl;
+        // }
     }
     return total_cost;
 }
@@ -392,19 +507,19 @@ double calculatePathCost(const std::vector<std::vector<int>>& path) {
 std::vector<std::vector<bool>> generate_visited_from_hs(const std::unordered_map<std::vector<int>, stage, Hashfunc, Equalfunc>& hs, 
     int map_height, int map_width)
 {
-std::vector<std::vector<bool>> visited(map_height, std::vector<bool>(map_width, false));
+    std::vector<std::vector<bool>> visited(map_height, std::vector<bool>(map_width, false));
 
-// 遍历哈希表所有键
-for(const auto& entry : hs) {
-const std::vector<int>& state = entry.first;
-// 假设状态前两维是行列坐标
-int r = state[0]; 
-int c = state[1];
-if(r >=0 && r < map_height && c >=0 && c < map_width) {
-visited[r][c] = true;
-}
-}
-return visited;
+    // 遍历哈希表所有键
+    for(const auto& entry : hs) {
+        const std::vector<int>& state = entry.first;
+    // 假设状态前两维是行列坐标
+        int r = state[0]; 
+        int c = state[1];
+        if(r >=0 && r < map_height && c >=0 && c < map_width) {
+            visited[r][c] = true;
+        }
+    }
+    return visited;
 }
 
 
@@ -420,6 +535,24 @@ void visualize_path(const MapLoader& ml,
     int rows = ml.getHeight();
     int cols = ml.getWidth();
     cv::Mat map_img(rows*scale, cols*scale, CV_8UC3, cv::Scalar(255,255,255));
+
+    // 水平线 (注意：scale是每个栅格的像素尺寸)
+    for(int r = 0; r <= rows; ++r) {  // <= rows 确保最后一行绘制
+        cv::line(map_img,
+                cv::Point(0, r*scale),          // 起点坐标
+                cv::Point(cols*scale, r*scale), // 终点坐标
+                cv::Scalar(200, 200, 200),      // 浅灰色
+                1);                             // 线宽
+    }
+
+    // 垂直线
+    for(int c = 0; c <= cols; ++c) {  // <= cols 确保最后一列绘制
+        cv::line(map_img,
+                cv::Point(c*scale, 0),
+                cv::Point(c*scale, rows*scale),
+                cv::Scalar(200, 200, 200),
+                1);
+    }
 
     // 绘制栅格地图
     for(int r=0; r<rows; ++r) {
@@ -441,96 +574,73 @@ void visualize_path(const MapLoader& ml,
         }
     }
 
-    auto visited = generate_visited_from_hs(hs, ml.getHeight(), ml.getWidth());
-    // 绘制被访问过的节点
-    for (int r = 0; r < visited.size(); ++r) {
-        for (int c = 0; c < visited[r].size(); ++c) {
-            if (visited[r][c]) {
-                int center_x = c*scale + scale/2;
-                int center_y = r*scale + scale/2;
-                int arm_length = scale/4;  // 十字臂长
+//     auto visited = generate_visited_from_hs(hs, ml.getHeight(), ml.getWidth());
+//     // 绘制被访问过的节点
+//     for (int r = 0; r < visited.size(); ++r) {
+//         for (int c = 0; c < visited[r].size(); ++c) {
+//             if (visited[r][c]) {
+//                 int center_x = c*scale + scale/2;
+//                 int center_y = r*scale + scale/2;
+//                 int arm_length = scale/4;  // 十字臂长
                 
-                // 绘制水平线
-                cv::line(map_img,
-                         cv::Point(center_x - arm_length, center_y),
-                         cv::Point(center_x + arm_length, center_y),
-                         cv::Scalar(0, 0, 0), 
-                         2);  // 线宽
+//                 // 绘制水平线
+//                 cv::line(map_img,
+//                          cv::Point(center_x - arm_length, center_y),
+//                          cv::Point(center_x + arm_length, center_y),
+//                          cv::Scalar(0, 0, 0), 
+//                          2);  // 线宽
                 
-                // 绘制垂直线
-                cv::line(map_img,
-                         cv::Point(center_x, center_y - arm_length),
-                         cv::Point(center_x, center_y + arm_length),
-                         cv::Scalar(0, 0, 0),
-                         2);
-            }
-        }
-    }
+//                 // 绘制垂直线
+//                 cv::line(map_img,
+//                          cv::Point(center_x, center_y - arm_length),
+//                          cv::Point(center_x, center_y + arm_length),
+//                          cv::Scalar(0, 0, 0),
+//                          2);
+//             }
+//         }
+//     }
 
-    // 绘制路径
-    if(!path.empty()) {
-        vector<cv::Point> path_points;
-        for(const auto& p : path) {
-    // 注意坐标转换：地图(r,c)对应图像(x,y)=(c,r)
-            int x = p[1] * scale + scale/2;
-            int y = p[0] * scale + scale/2;
-            path_points.emplace_back(x, y);
-        }
+//     // 绘制路径
+//     if(!path.empty()) {
+//         vector<cv::Point> path_points;
+//         for(const auto& p : path) {
+//     // 注意坐标转换：地图(r,c)对应图像(x,y)=(c,r)
+//             int x = p[1] * scale + scale/2;
+//             int y = p[0] * scale + scale/2;
+//             path_points.emplace_back(x, y);
+//         }
 
-    // 绘制连线
-        for(size_t i=1; i<path_points.size(); ++i) {
-            cv::line(map_img, 
-                    path_points[i-1], 
-                    path_points[i],
-                    cv::Scalar(255,0,0), 
-                    3);
-        }
+//     // 绘制连线
+//         for(size_t i=1; i<path_points.size(); ++i) {
+//             cv::line(map_img, 
+//                     path_points[i-1], 
+//                     path_points[i],
+//                     cv::Scalar(255,0,0), 
+//                     3);
+//         }
+    
+    
+//     // 绘制路径点
+//         for(const auto& pt : path_points) {
+//             cv::circle(map_img, pt, 7, cv::Scalar(0,0,255), -1); // 蓝色点
+//         }
+//     }
 
-    // 生成并绘制平滑路径（绿色实线）
-    //auto smooth_path = PathSmoother::bezierSmooth(path_smooth, ml);
-    // if(!path_smooth.empty()) {
-    //     vector<cv::Point> smooth_points;
-    //     for(const auto& p : path_smooth) {
-    //         // 注意平滑路径可能没有时间维度
-    //         int x = (p.size() >= 2) ? p[1] * scale + scale/2 : 0;
-    //         int y = (p.size() >= 1) ? p[0] * scale + scale/2 : 0;
-    //         smooth_points.emplace_back(x, y);
-    //     }
-        
-    //     // 绘制带箭头的路径
-    //     for(size_t i = 1; i < smooth_points.size(); ++i) {
-    //         cv::arrowedLine(map_img, 
-    //                        smooth_points[i-1], 
-    //                        smooth_points[i],
-    //                        cv::Scalar(0, 255, 0), // 绿色
-    //                        2,                     // 线宽
-    //                        cv::LINE_AA,
-    //                        0,                     // 无偏移
-    //                        0.1);                  // 箭头尖端比例
-    //     }
-    // }
+// // 绘制起点和终点
+//     cv::Point start(agent.st[1]*scale + scale/2, agent.st[0]*scale + scale/2);
+//     cv::Point end(agent.ed[1]*scale + scale/2, agent.ed[0]*scale + scale/2);
+//     cv::circle(map_img, start, 6, cv::Scalar(0,255,0), -1);  // 绿色起点
+//     cv::circle(map_img, end, 6, cv::Scalar(0,165,255), -1);  // 橙色终点
 
-// 绘制路径点
-        for(const auto& pt : path_points) {
-            cv::circle(map_img, pt, 7, cv::Scalar(0,0,255), -1); // 蓝色点
-        }
-    }
-
-// 绘制起点和终点
-    cv::Point start(agent.st[1]*scale + scale/2, agent.st[0]*scale + scale/2);
-    cv::Point end(agent.ed[1]*scale + scale/2, agent.ed[0]*scale + scale/2);
-    cv::circle(map_img, start, 6, cv::Scalar(0,255,0), -1);  // 绿色起点
-    cv::circle(map_img, end, 6, cv::Scalar(0,165,255), -1);  // 橙色终点
-
-// 添加图例
-    cv::putText(map_img, "Start", start + cv::Point(10,-10), 
-               cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,255,0));
-    cv::putText(map_img, "Goal", end + cv::Point(10,-10), 
-               cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,165,255));
-    cv::putText(map_img, "Raw Path", cv::Point(10, 20), 
-               cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(225, 0, 0));
-    cv::putText(map_img, "Density", cv::Point(10, 60), 
-               cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255));
+// // 添加图例
+//     cv::putText(map_img, "Start", start + cv::Point(10,-10), 
+//                cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,255,0));
+//     cv::putText(map_img, "Goal", end + cv::Point(10,-10), 
+//                cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,165,255));
+//     cv::putText(map_img, "Raw Path", cv::Point(10, 20), 
+//                cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(225, 0, 0));
+//     cv::putText(map_img, "Density", cv::Point(10, 60), 
+//                cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255));
 
 // 绘制障碍物密度图
     cv::Mat density_img;

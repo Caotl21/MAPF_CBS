@@ -44,8 +44,14 @@ node node::inherit()
 void node::ccost()
 {
     int c=0;
-    for(int i=0;i<num_agent;++i)   c += phs[i].size() -1;
-    cost = c;
+    double d = 0;
+    for(int i=0;i<num_agent;++i)  
+    {    
+        c += phs[i].size() -1;
+        d += calculatePathCost(phs[i]);
+    }
+    cost = d;
+    
 }
 //判断节点的有效性
 void node::tvalid(vector<vector<int > >& cts_pointbig,vector<vector<int > >& cts_edge8)//to be optimzie
@@ -223,8 +229,8 @@ vector<int > get_ct_point5(vector<vector<int > > cts_pointbig,node nnow,bool pc)
                 new_constraints.push_back(constraint);
                 vector<vector<int > > pths;
                 //vector<vector<int > > pths_s;
-                int newres = sta(as,cts_pointbig[i][j],new_constraints,nnow.cts_edge[cts_pointbig[i][j]],pths); 
-                if(newres>nnow.phs[cts_pointbig[i][j]].size()-1)    cardinal_agents.push_back(cts_pointbig[i][j]);
+                auto newres = sta(as,cts_pointbig[i][j],new_constraints,nnow.cts_edge[cts_pointbig[i][j]],pths); 
+                if(newres>calculatePathCost(nnow.phs[cts_pointbig[i][j]]))    cardinal_agents.push_back(cts_pointbig[i][j]);
                 else notcardinal_agents.push_back(cts_pointbig[i][j]);
             }
             cardinal_num_new = min(2,(int)cardinal_agents.size());
@@ -244,7 +250,7 @@ vector<int > get_ct_point5(vector<vector<int > > cts_pointbig,node nnow,bool pc)
 }
 
 
-int runCBS(agent* as,int n,bool pc)
+double runCBS(agent* as,int n,bool pc)
 {
     num_agent = n;
     node root,nnow;

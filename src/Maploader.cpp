@@ -79,7 +79,7 @@ void MapLoader::computeDensity() {
         0.124, 0.204, 0.124,
         0.075, 0.124, 0.075);
     cv::filter2D(obstacle_map, density_map, -1, kernel,
-                 cv::Point(-1,-1), 0, cv::BORDER_REPLICATE);
+                 cv::Point(-1,-1), 0, cv::BORDER_CONSTANT);
 }
 
 //DensityMap interface
