@@ -272,12 +272,12 @@ void explore(std::vector<int> stnow, int dx, int dy, int density_level,
     else
     {
         stage newst;
-        double turn_penalty = newst.turn_penalty(parent_dir);
         newst.post = stnew;          // 设置新状态的坐标
-        double w = dynamic_weight(stnew, st0, ed0); //5 * densitydata;
+        double w = dynamic_weight(stnew, st0, ed0); //+ 5 * densitydata;
         //double w = 1.0;
         newst.geth(ed0, w);             // 计算启发式代价 h
-
+        double turn_penalty = newst.turn_penalty(parent_dir) * w;
+        
         //分层搜索策略对应不同的代价
         switch(density_level){
             case 0 :
@@ -541,7 +541,7 @@ void visualize_path(const MapLoader& ml,
         cv::line(map_img,
                 cv::Point(0, r*scale),          // 起点坐标
                 cv::Point(cols*scale, r*scale), // 终点坐标
-                cv::Scalar(200, 200, 200),      // 浅灰色
+                cv::Scalar(0, 0, 0),      // 浅灰色
                 1);                             // 线宽
     }
 
@@ -550,7 +550,7 @@ void visualize_path(const MapLoader& ml,
         cv::line(map_img,
                 cv::Point(c*scale, 0),
                 cv::Point(c*scale, rows*scale),
-                cv::Scalar(200, 200, 200),
+                cv::Scalar(0, 0, 0),
                 1);
     }
 
@@ -574,73 +574,73 @@ void visualize_path(const MapLoader& ml,
         }
     }
 
-//     auto visited = generate_visited_from_hs(hs, ml.getHeight(), ml.getWidth());
-//     // 绘制被访问过的节点
-//     for (int r = 0; r < visited.size(); ++r) {
-//         for (int c = 0; c < visited[r].size(); ++c) {
-//             if (visited[r][c]) {
-//                 int center_x = c*scale + scale/2;
-//                 int center_y = r*scale + scale/2;
-//                 int arm_length = scale/4;  // 十字臂长
+    auto visited = generate_visited_from_hs(hs, ml.getHeight(), ml.getWidth());
+    // 绘制被访问过的节点
+    for (int r = 0; r < visited.size(); ++r) {
+        for (int c = 0; c < visited[r].size(); ++c) {
+            if (visited[r][c]) {
+                int center_x = c*scale + scale/2;
+                int center_y = r*scale + scale/2;
+                int arm_length = scale/4;  // 十字臂长
                 
-//                 // 绘制水平线
-//                 cv::line(map_img,
-//                          cv::Point(center_x - arm_length, center_y),
-//                          cv::Point(center_x + arm_length, center_y),
-//                          cv::Scalar(0, 0, 0), 
-//                          2);  // 线宽
+                // 绘制水平线
+                cv::line(map_img,
+                         cv::Point(center_x - arm_length, center_y),
+                         cv::Point(center_x + arm_length, center_y),
+                         cv::Scalar(0, 0, 0), 
+                         2);  // 线宽
                 
-//                 // 绘制垂直线
-//                 cv::line(map_img,
-//                          cv::Point(center_x, center_y - arm_length),
-//                          cv::Point(center_x, center_y + arm_length),
-//                          cv::Scalar(0, 0, 0),
-//                          2);
-//             }
-//         }
-//     }
+                // 绘制垂直线
+                cv::line(map_img,
+                         cv::Point(center_x, center_y - arm_length),
+                         cv::Point(center_x, center_y + arm_length),
+                         cv::Scalar(0, 0, 0),
+                         2);
+            }
+        }
+    }
 
-//     // 绘制路径
-//     if(!path.empty()) {
-//         vector<cv::Point> path_points;
-//         for(const auto& p : path) {
-//     // 注意坐标转换：地图(r,c)对应图像(x,y)=(c,r)
-//             int x = p[1] * scale + scale/2;
-//             int y = p[0] * scale + scale/2;
-//             path_points.emplace_back(x, y);
-//         }
+    // 绘制路径
+    if(!path.empty()) {
+        vector<cv::Point> path_points;
+        for(const auto& p : path) {
+    // 注意坐标转换：地图(r,c)对应图像(x,y)=(c,r)
+            int x = p[1] * scale + scale/2;
+            int y = p[0] * scale + scale/2;
+            path_points.emplace_back(x, y);
+        }
 
-//     // 绘制连线
-//         for(size_t i=1; i<path_points.size(); ++i) {
-//             cv::line(map_img, 
-//                     path_points[i-1], 
-//                     path_points[i],
-//                     cv::Scalar(255,0,0), 
-//                     3);
-//         }
+    // 绘制连线
+        for(size_t i=1; i<path_points.size(); ++i) {
+            cv::line(map_img, 
+                    path_points[i-1], 
+                    path_points[i],
+                    cv::Scalar(255,0,0), 
+                    3);
+        }
     
     
-//     // 绘制路径点
-//         for(const auto& pt : path_points) {
-//             cv::circle(map_img, pt, 7, cv::Scalar(0,0,255), -1); // 蓝色点
-//         }
-//     }
+    // 绘制路径点
+        for(const auto& pt : path_points) {
+            cv::circle(map_img, pt, 7, cv::Scalar(0,0,255), -1); // 蓝色点
+        }
+    }
 
-// // 绘制起点和终点
-//     cv::Point start(agent.st[1]*scale + scale/2, agent.st[0]*scale + scale/2);
-//     cv::Point end(agent.ed[1]*scale + scale/2, agent.ed[0]*scale + scale/2);
-//     cv::circle(map_img, start, 6, cv::Scalar(0,255,0), -1);  // 绿色起点
-//     cv::circle(map_img, end, 6, cv::Scalar(0,165,255), -1);  // 橙色终点
+// 绘制起点和终点
+    cv::Point start(agent.st[1]*scale + scale/2, agent.st[0]*scale + scale/2);
+    cv::Point end(agent.ed[1]*scale + scale/2, agent.ed[0]*scale + scale/2);
+    cv::circle(map_img, start, 6, cv::Scalar(0,255,0), -1);  // 绿色起点
+    cv::circle(map_img, end, 6, cv::Scalar(0,165,255), -1);  // 橙色终点
 
-// // 添加图例
-//     cv::putText(map_img, "Start", start + cv::Point(10,-10), 
-//                cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,255,0));
-//     cv::putText(map_img, "Goal", end + cv::Point(10,-10), 
-//                cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,165,255));
-//     cv::putText(map_img, "Raw Path", cv::Point(10, 20), 
-//                cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(225, 0, 0));
-//     cv::putText(map_img, "Density", cv::Point(10, 60), 
-//                cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255));
+// 添加图例
+    cv::putText(map_img, "Start", start + cv::Point(10,-10), 
+               cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,255,0));
+    cv::putText(map_img, "Goal", end + cv::Point(10,-10), 
+               cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,165,255));
+    cv::putText(map_img, "Raw Path", cv::Point(10, 20), 
+               cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(225, 0, 0));
+    cv::putText(map_img, "Density", cv::Point(10, 60), 
+               cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255));
 
 // 绘制障碍物密度图
     cv::Mat density_img;

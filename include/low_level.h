@@ -91,27 +91,25 @@ struct stage{
             if(prev_dir == std::make_pair(0,0)) return 0; // 初始方向无惩罚
             int dot = dir.first*prev_dir.first + dir.second*prev_dir.second;  // 计算方向向量点积
             double angle = acos(dot / (norm(dir)*norm(prev_dir) + 1e-6));   // 计算角度惩罚（单位：弧度）
+            double PENALTY_WEIGHT;
             if(angle > M_PI/2) {
                 // 惩罚系数（可调整）
-                const double PENALTY_WEIGHT = 5000.0; 
-                return PENALTY_WEIGHT * angle;
+                PENALTY_WEIGHT = 10.0; 
             }
             else if(angle = M_PI/2) {
                 // 惩罚系数（可调整）
-                const double PENALTY_WEIGHT = 0.0; 
-                return PENALTY_WEIGHT * angle;
+                PENALTY_WEIGHT = 0.7; 
             }
             else if(angle = M_PI/4) {
                 // 惩罚系数（可调整）
-                const double PENALTY_WEIGHT = 0.0; 
-                return PENALTY_WEIGHT * angle;
+                PENALTY_WEIGHT = 0.0; 
             }
             else {
                 // 惩罚系数（可调整）
-                const double PENALTY_WEIGHT = 0.0; 
-                return PENALTY_WEIGHT * angle;
+                PENALTY_WEIGHT = 0.0; 
+                
             }
-            //return 0;
+            return PENALTY_WEIGHT;
         }
 
     private:
