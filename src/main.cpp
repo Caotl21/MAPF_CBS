@@ -27,8 +27,8 @@ int main() {
     // std::cout << "Welcome to the CBS project!" << std::endl;
     exampleFunction();
 
-    ml.loadMap("/home/caotl/MAPF_CBS/benchmark/random-32-32-10/random-32-32-10.map");//绝对路径
-    ScenarioLoader sl("/home/caotl/MAPF_CBS/benchmark/random-32-32-10/random-32-32-10-random-1.scen");//绝对路径
+    ml.loadMap("/home/caotl/MAPF_CBS/benchmark/random-32-32-20/random-32-32-20.map");//绝对路径
+    ScenarioLoader sl("/home/caotl/MAPF_CBS/benchmark/random-32-32-20/random-32-32-20-random-1.scen");//绝对路径
     
     // cout<<"Num of Experiments "<<sl.GetNumExperiments()<<endl;
     // int n;
@@ -50,7 +50,7 @@ int main() {
     // cout << "Algorithm execution time: " << duration << " ms" << endl;
 
     // 测试参数设置
-    const int test_agent_index = 15;
+    const int test_agent_index = 13;
     const bool enable_visualization = true; // 是否显示路径
 
     // 初始化agent

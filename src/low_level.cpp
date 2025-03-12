@@ -273,8 +273,8 @@ void explore(std::vector<int> stnow, int dx, int dy, int density_level,
     {
         stage newst;
         newst.post = stnew;          // 设置新状态的坐标
-        double w = dynamic_weight(stnew, st0, ed0); //+ 5 * densitydata;
-        //double w = 1.0;
+        //double w = dynamic_weight(stnew, st0, ed0) + densitydata;
+        double w = 1.0;
         newst.geth(ed0, w);             // 计算启发式代价 h
         double turn_penalty = newst.turn_penalty(parent_dir) * w;
         
@@ -372,36 +372,36 @@ double sta(agent* as,int i,std::vector<vector<int> > ct_point3s,std::vector<vect
             double current_density = ml.getDensity(stnow[1],stnow[0]);
             //稀疏区域
             if(current_density == 0){
-                int jump_distance = get_jump_distance(current_density);
-                bool jump_success = false;
+                // int jump_distance = get_jump_distance(current_density);
+                // bool jump_success = false;
                 
-                while (jump_distance >= 1 && !jump_success){
-                    for (int i = 0; i < 8; ++i){
-                        if(check_jump_path(stnow, ed0, dx[i]*jump_distance, dy[i]*jump_distance,
-                            ct_point3s_set, ct_edge6s_set, ml)){
-                                explore_with_jump(stnow, dx[i], dy[i], jump_distance, open_list, 
-                                    edstage, ed0, st0, ct_point3s_set, ct_edge6s_set, ml);
-                                jump_success = true;
-                        }
-                    }
-                    if(!jump_success){
-                        jump_distance--;
-                    }
-                }
-
-                if (!jump_success){
-                    for (int i = 0; i < 8; ++i) {
-                        if (ifvalid(stnow, dx[i], dy[i], ct_point3s_set, ct_edge6s_set, ml)) {
-                            explore(stnow, dx[i], dy[i], 0, open_list, edstage, ed0, st0);
-                        }
-                    }
-                }
-
-                // for (int i = 0; i < 8; ++i) {
-                //     if (ifvalid(stnow, dx[i], dy[i], ct_point3s_set, ct_edge6s_set, ml)){
-                //         explore(stnow, dx[i], dy[i], 0, open_list, edstage, ed0, st0);
+                // while (jump_distance >= 1 && !jump_success){
+                //     for (int i = 0; i < 8; ++i){
+                //         if(check_jump_path(stnow, ed0, dx[i]*jump_distance, dy[i]*jump_distance,
+                //             ct_point3s_set, ct_edge6s_set, ml)){
+                //                 explore_with_jump(stnow, dx[i], dy[i], jump_distance, open_list, 
+                //                     edstage, ed0, st0, ct_point3s_set, ct_edge6s_set, ml);
+                //                 jump_success = true;
+                //         }
+                //     }
+                //     if(!jump_success){
+                //         jump_distance--;
                 //     }
                 // }
+
+                // if (!jump_success){
+                //     for (int i = 0; i < 8; ++i) {
+                //         if (ifvalid(stnow, dx[i], dy[i], ct_point3s_set, ct_edge6s_set, ml)) {
+                //             explore(stnow, dx[i], dy[i], 0, open_list, edstage, ed0, st0);
+                //         }
+                //     }
+                // }
+
+                for (int i = 0; i < 8; ++i) {
+                    if (ifvalid(stnow, dx[i], dy[i], ct_point3s_set, ct_edge6s_set, ml)){
+                        explore(stnow, dx[i], dy[i], 0, open_list, edstage, ed0, st0);
+                    }
+                }
             }
     
             //稠密区域
@@ -642,29 +642,29 @@ void visualize_path(const MapLoader& ml,
     cv::putText(map_img, "Density", cv::Point(10, 60), 
                cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255));
 
-// 绘制障碍物密度图
-    cv::Mat density_img;
-    cv::Mat scaled_density;
-    cv::resize(ml.getDensityMap(), scaled_density, 
-          cv::Size(cols*scale, rows*scale), // 注意OpenCV尺寸顺序是(width, height)
-          0, 0, cv::INTER_NEAREST); // 保持离散值的清晰度
-    cv::normalize(
-        scaled_density,  // 直接使用OpenCV矩阵
-        density_img,
-        0, 255,
-        cv::NORM_MINMAX,
-        CV_8UC1  // 确保输出为8位无符号单通道 [!code focus]
-    );
+// // 绘制障碍物密度图
+//     cv::Mat density_img;
+//     cv::Mat scaled_density;
+//     cv::resize(ml.getDensityMap(), scaled_density, 
+//           cv::Size(cols*scale, rows*scale), // 注意OpenCV尺寸顺序是(width, height)
+//           0, 0, cv::INTER_NEAREST); // 保持离散值的清晰度
+//     cv::normalize(
+//         scaled_density,  // 直接使用OpenCV矩阵
+//         density_img,
+//         0, 255,
+//         cv::NORM_MINMAX,
+//         CV_8UC1  // 确保输出为8位无符号单通道 [!code focus]
+//     );
 
-    // 应用伪彩色时需要转换为3通道
-    cv::applyColorMap(density_img, density_img, cv::COLORMAP_JET);
+//     // 应用伪彩色时需要转换为3通道
+//     cv::applyColorMap(density_img, density_img, cv::COLORMAP_JET);
 
-    // 叠加时确保map_img也是彩色图
-    if (map_img.channels() == 1) {
-        cv::cvtColor(map_img, map_img, cv::COLOR_GRAY2BGR);
-    }
+//     // 叠加时确保map_img也是彩色图
+//     if (map_img.channels() == 1) {
+//         cv::cvtColor(map_img, map_img, cv::COLOR_GRAY2BGR);
+//     }
 
-    cv::addWeighted(map_img, 0.7, density_img, 0.3, 0, map_img);
+//     cv::addWeighted(map_img, 0.7, density_img, 0.3, 0, map_img);
 
 // 显示图像
     cv::imshow("Path Visualization", map_img);
